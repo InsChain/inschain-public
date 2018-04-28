@@ -176,9 +176,31 @@ func TestBatchSendCoins(t *testing.T)  {
 }
 
 
+// Clean up created accounts for subsequent runs
 func TestBatchDeleteKeys(t *testing.T) {
+        //Define password used in account creation
+        password := "12345678"
+
+        //set start time
+        start := time.Now()
+        fmt.Println("Test start time is :", start)
+        //start a loop to delete users
+        for i:=0;i <= 5 ; i++ {
+                name := "test_user" + strconv.Itoa(i)
+
+                jsonStr := []byte(fmt.Sprintf(`{"password":"%s"}`, password))
+                res, body := request(t, port, "DELETE", "/keys/"+name, jsonStr)
+
+                fmt.Println(res.Body,res.StatusCode,body)
+                assert.Equal(t, http.StatusOK, res.StatusCode, body)
+        }
+
+        //compute time used
+        timespan := time.Since(start).Seconds()
+        fmt.Printf("Used time : %.2fs", timespan)
 
 }
+
 
 func doSendToSpecifyAddress(t *testing.T, port, seed string, receiveAddr string)  (resultTx ctypes.ResultBroadcastTxCommit) {
 	// get the account to get the sequence
