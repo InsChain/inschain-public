@@ -13,6 +13,8 @@ import (
 	"encoding/json"
 	"time"
 	"github.com/stretchr/testify/require"
+	//"sync"
+	"sync"
 )
 
 func TestTime(t *testing.T)  {
@@ -23,6 +25,29 @@ func TestTime(t *testing.T)  {
 
 	res :=now.Sub(m1)
 	fmt.Println(res)
+}
+
+func TestChannel(t *testing.T) {
+	var wg sync.WaitGroup
+	var ss = make(chan string, 10)
+	for j:=0;j<10;j++ {
+		ss <- strconv.Itoa(j)
+	}
+	for i:=0;i < 3;i++ {
+		go func(ss chan string) {
+			for  {
+				s,ok := <- ss
+				if !ok {
+					return
+				}else {
+					fmt.Println(s)
+				}
+			}
+
+		}(ss)
+	}
+	close(ss)
+	wg.Wait()
 }
 
 //test - batch generate users
@@ -81,6 +106,9 @@ func TestGetKeys(t *testing.T) {
 //test batch transfer coins
 func TestBatchSendCoins(t *testing.T)  {
 	var m2 keys.KeyOutput
+	var sends = make(chan string, 20000)
+	var wg sync.WaitGroup
+
 	//set start time
 	preTime := time.Now()
 	fmt.Println("pre Time is :",preTime)
@@ -88,38 +116,56 @@ func TestBatchSendCoins(t *testing.T)  {
 	for i:=0 ; i <= 10000 ; i++ {
 		receiveUser := "test_user" + strconv.Itoa(i)
 		fmt.Println("send user name is :",receiveUser)
-		//get address with username
-		keyEndPoint := fmt.Sprintf("/keys/%s", receiveUser)
-		res, body := request(t, port, "GET", keyEndPoint, nil)
-		require.Equal(t, http.StatusOK, res.StatusCode, body)
-		json.Unmarshal([]byte(body), &m2)
-		recieveAddress := m2.Address
-		// create TX
-		resultTx := doSendToSpecifyAddress(t, port, seed, recieveAddress)
-		waitForHeight(resultTx.Height + 1)
+		sends <- receiveUser
 
-		// check if tx was commited
-		assert.Equal(t, uint32(0), resultTx.CheckTx.Code)
-		assert.Equal(t, uint32(0), resultTx.DeliverTx.Code)
-		//get genesis address and check if the account changed
-		res, body = request(t, port, "GET", "/accounts/"+sendAddr, nil)
-		var m auth.BaseAccount
-		err := json.Unmarshal([]byte(body), &m)
-		require.Nil(t, err)
-		coins := m.Coins
-		mycoins := coins[0]
-		fmt.Println("my coins asset is :", mycoins)
-
-		// query receiver
-		res, body = request(t, port, "GET", "/accounts/"+recieveAddress, nil)
-		require.Equal(t, http.StatusOK, res.StatusCode, body)
-
-		err = json.Unmarshal([]byte(body), &m)
-		require.Nil(t, err)
-		coins = m.Coins
-		mycoins = coins[0]
-		fmt.Println(receiveUser, " user's coins asset is :", mycoins)
 	}
+	for j:=0;j < 10;j ++ {
+		go func(sends chan string) {
+			for {
+				receiveUser, ok := <-sends
+				if !ok {
+					return
+				}else {
+					//get address with username
+					keyEndPoint := fmt.Sprintf("/keys/%s", receiveUser)
+					res, body := request(t, port, "GET", keyEndPoint, nil)
+					require.Equal(t, http.StatusOK, res.StatusCode, body)
+					json.Unmarshal([]byte(body), &m2)
+					recieveAddress := m2.Address
+
+					// create TX
+					resultTx := doSendToSpecifyAddress(t, port, seed, recieveAddress)
+					waitForHeight(resultTx.Height + 1)
+
+					// check if tx was commited
+					assert.Equal(t, uint32(0), resultTx.CheckTx.Code)
+					assert.Equal(t, uint32(0), resultTx.DeliverTx.Code)
+					//get genesis address and check if the account changed
+					res, body = request(t, port, "GET", "/accounts/"+sendAddr, nil)
+					var m auth.BaseAccount
+					err := json.Unmarshal([]byte(body), &m)
+					require.Nil(t, err)
+					coins := m.Coins
+					mycoins := coins[0]
+					fmt.Println("my coins asset is :", mycoins)
+
+					// query receiver
+					res, body = request(t, port, "GET", "/accounts/"+recieveAddress, nil)
+					require.Equal(t, http.StatusOK, res.StatusCode, body)
+
+					err = json.Unmarshal([]byte(body), &m)
+					require.Nil(t, err)
+					coins = m.Coins
+					mycoins = coins[0]
+					fmt.Println(receiveUser, " user's coins asset is :", mycoins)
+				}
+			}
+		}(sends)
+	}
+	//close(sends)
+	wg.Wait()
+
+
 	//set end time
 	latestTime := time.Now()
 	fmt.Println("right now time :",latestTime)
