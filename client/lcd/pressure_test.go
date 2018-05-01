@@ -17,6 +17,14 @@ import (
 	"sync"
 )
 
+var (
+	genMulti = 10000
+	batchsends = 10000
+	channelConsumers = 10
+	batchDeletes = 5
+
+)
+
 //test - batch generate users
 func TestGeneratePressure(t *testing.T) {
 	//define default password and get keybase
@@ -28,8 +36,9 @@ func TestGeneratePressure(t *testing.T) {
 	//set start time
 	preTime := time.Now()
 	fmt.Println("pre Time is :",preTime)
+
 	//start a loop to generate users and load to tendermint
-	for i:=0;i <= 10000 ; i++ {
+	for i:=0;i <= genMulti ; i++ {
 		name := "test_user" + strconv.Itoa(i)
 		_, seed, err :=kb.Create(name, password, cryptoKeys.AlgoSecp256k1)
 		if err != nil {
@@ -80,13 +89,13 @@ func TestBatchSendCoins(t *testing.T)  {
 	preTime := time.Now()
 	fmt.Println("pre Time is :",preTime)
 	//start a loop to transfer coin from genesis address to specify address
-	for i:=0 ; i <= 10000 ; i++ {
+	for i:=0 ; i <= batchsends ; i++ {
 		receiveUser := "test_user" + strconv.Itoa(i)
 		fmt.Println("send user name is :",receiveUser)
 		sends <- receiveUser
 
 	}
-	for j:=0;j < 10;j ++ {
+	for j:=0;j < channelConsumers;j ++ {
 		go func(sends chan string) {
 			for {
 				receiveUser, ok := <-sends
@@ -152,7 +161,7 @@ func TestBatchDeleteKeys(t *testing.T) {
         start := time.Now()
         fmt.Println("Test start time is :", start)
         //start a loop to delete users
-        for i:=0;i <= 5 ; i++ {
+        for i:=0;i <= batchDeletes ; i++ {
                 name := "test_user" + strconv.Itoa(i)
 
                 jsonStr := []byte(fmt.Sprintf(`{"password":"%s"}`, password))
@@ -169,6 +178,7 @@ func TestBatchDeleteKeys(t *testing.T) {
 }
 
 
+//send coins to specify address
 func doSendToSpecifyAddress(t *testing.T, port, seed string, receiveAddr string)  (resultTx ctypes.ResultBroadcastTxCommit) {
 	// get the account to get the sequence
 	res, body := request(t, port, "GET", "/accounts/"+sendAddr, nil)
