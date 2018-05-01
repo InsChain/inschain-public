@@ -17,39 +17,6 @@ import (
 	"sync"
 )
 
-func TestTime(t *testing.T)  {
-	now := time.Now()
-	d, _ := time.ParseDuration("-24h")
-	m1 := now.Add(d)
-	fmt.Println(m1)
-
-	res :=now.Sub(m1)
-	fmt.Println(res)
-}
-
-func TestChannel(t *testing.T) {
-	var wg sync.WaitGroup
-	var ss = make(chan string, 10)
-	for j:=0;j<10;j++ {
-		ss <- strconv.Itoa(j)
-	}
-	for i:=0;i < 3;i++ {
-		go func(ss chan string) {
-			for  {
-				s,ok := <- ss
-				if !ok {
-					return
-				}else {
-					fmt.Println(s)
-				}
-			}
-
-		}(ss)
-	}
-	close(ss)
-	wg.Wait()
-}
-
 //test - batch generate users
 func TestGeneratePressure(t *testing.T) {
 	//define default password and get keybase
