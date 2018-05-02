@@ -74,8 +74,8 @@ update_tools:
 get_tools:
 	cd tools && $(MAKE) get_tools
 
-##	@rm -rf vendor/ :JH for windows - no rm command
 get_vendor_deps:
+	@rm -rf vendor/ :JH for windows - no rm command
 	@echo "--> Running dep ensure"
 	@dep ensure -v
 
