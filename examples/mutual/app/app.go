@@ -15,7 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
-	"github.com/cosmos/cosmos-sdk/x/simplestake"
+	//"github.com/cosmos/cosmos-sdk/x/simplestake"
 	"Inschain-tendermint/x/mutual"
 
 	"Inschain-tendermint/examples/mutual/types"
@@ -62,12 +62,12 @@ func NewMutualApp(logger log.Logger, dbs map[string]dbm.DB) *MutualApp {
 	// add handlers
 	coinKeeper := bank.NewCoinKeeper(app.accountMapper)
 	ibcMapper := ibc.NewIBCMapper(app.cdc, app.capKeyIBCStore)
-	stakeKeeper := simplestake.NewKeeper(app.capKeyStakingStore, coinKeeper)
+	//stakeKeeper := simplestake.NewKeeper(app.capKeyStakingStore, coinKeeper)
 	mutualKeeper := mutual.NewKeeper(app.capKeyMutualStore, coinKeeper)
 	app.Router().
 		AddRoute("bank", bank.NewHandler(coinKeeper)).
 		AddRoute("ibc", ibc.NewHandler(ibcMapper, coinKeeper)).
-		AddRoute("simplestake", simplestake.NewHandler(stakeKeeper)).
+		//AddRoute("simplestake", simplestake.NewHandler(stakeKeeper)).
 		AddRoute("mutual", mutual.NewHandler(mutualKeeper))
 
 	// initialize BaseApp

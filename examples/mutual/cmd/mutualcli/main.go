@@ -14,10 +14,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 
 	"github.com/cosmos/cosmos-sdk/version"
-	authcmd "github.com/cosmos/cosmos-sdk/x/auth/commands"
-	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/commands"
-	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/commands"
-	simplestakingcmd "github.com/cosmos/cosmos-sdk/x/simplestake/commands"
+	//authcmd "github.com/cosmos/cosmos-sdk/x/auth/commands"
+	//bankcmd "github.com/cosmos/cosmos-sdk/x/bank/commands"
+	//ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/commands"
+	//simplestakingcmd "github.com/cosmos/cosmos-sdk/x/simplestake/commands"
 	mutualcmd "Inschain-tendermint/x/mutual/commands"
 
 	"Inschain-tendermint/examples/mutual/app"
@@ -50,27 +50,27 @@ func main() {
 	rootCmd.AddCommand(client.LineBreak)
 
 	// add query/post commands (custom to binary)
-	rootCmd.AddCommand(
-		client.GetCommands(
-			authcmd.GetAccountCmd("main", cdc, types.GetAccountDecoder(cdc)),
-		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
-			bankcmd.SendTxCmd(cdc),
-		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
-			ibccmd.IBCTransferCmd(cdc),
-		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
-			ibccmd.IBCRelayCmd(cdc),
-			simplestakingcmd.BondTxCmd(cdc),
-		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
-			simplestakingcmd.UnbondTxCmd(cdc),
-		)...)
+	//rootCmd.AddCommand(
+	//	client.GetCommands(
+	//		authcmd.GetAccountCmd("main", cdc, types.GetAccountDecoder(cdc)),
+	//	)...)
+	//rootCmd.AddCommand(
+	//	client.PostCommands(
+	//		bankcmd.SendTxCmd(cdc),
+	//	)...)
+	//rootCmd.AddCommand(
+	//	client.PostCommands(
+	//		ibccmd.IBCTransferCmd(cdc),
+	//	)...)
+	//rootCmd.AddCommand(
+	//	client.PostCommands(
+	//		ibccmd.IBCRelayCmd(cdc),
+	//		simplestakingcmd.BondTxCmd(cdc),
+	//	)...)
+	//rootCmd.AddCommand(
+	//	client.PostCommands(
+	//		simplestakingcmd.UnbondTxCmd(cdc),
+	//	)...)
 // TODO : JH add mutual commands
 
 	// add proxy, version and key info
