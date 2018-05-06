@@ -19,41 +19,43 @@
     "baseapp",
     "client",
     "client/context",
-    "client/core",
     "client/keys",
     "client/lcd",
     "client/rpc",
     "client/tx",
+    "cmd/gaia/app",
     "examples/basecoin/app",
     "examples/basecoin/types",
     "examples/democoin/app",
     "examples/democoin/types",
     "examples/democoin/x/cool",
-    "examples/democoin/x/cool/commands",
+    "examples/democoin/x/cool/client/cli",
     "examples/democoin/x/pow",
-    "examples/democoin/x/pow/commands",
+    "examples/democoin/x/pow/client/cli",
+    "examples/democoin/x/simplestake",
+    "examples/democoin/x/simplestake/client/cli",
     "examples/democoin/x/sketchy",
     "mock",
     "server",
     "store",
+    "tests",
     "types",
     "version",
     "wire",
     "x/auth",
-    "x/auth/commands",
-    "x/auth/rest",
+    "x/auth/client/cli",
+    "x/auth/client/rest",
     "x/bank",
-    "x/bank/commands",
-    "x/bank/rest",
+    "x/bank/client",
+    "x/bank/client/cli",
+    "x/bank/client/rest",
     "x/ibc",
-    "x/ibc/commands",
-    "x/ibc/rest",
-    "x/simplestake",
-    "x/simplestake/commands",
-    "x/stake"
+    "x/ibc/client/cli",
+    "x/ibc/client/rest",
+    "x/stake",
+    "x/stake/client/cli"
   ]
-  revision = "40ed65d1103a9490b66e236682d81dc00f641765"
-  version = "v0.14.1"
+  revision = "v0.16.0-rc0"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -502,6 +504,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "48f831a7ccc2c0fd3b790c16ca99ec864b89253d087ff4190d821c01c13e635a"
+  inputs-digest = "79e3a4ef40643161bb084aad7ae9c3d3a5f88312a2d93be75563d1d4c0c60c5a"
   solver-name = "gps-cdcl"
   solver-version = 1
