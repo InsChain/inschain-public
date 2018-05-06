@@ -33,6 +33,7 @@ type rootMultiStore struct {
 var _ CommitMultiStore = (*rootMultiStore)(nil)
 var _ Queryable = (*rootMultiStore)(nil)
 
+// nolint
 func NewCommitMultiStore(db dbm.DB) *rootMultiStore {
 	return &rootMultiStore{
 		db:           db,
@@ -56,8 +57,9 @@ func (rs *rootMultiStore) MountStoreWithDB(key StoreKey, typ StoreType, db dbm.D
 		panic(fmt.Sprintf("rootMultiStore duplicate store key %v", key))
 	}
 	rs.storesParams[key] = storeParams{
-		db:  db,
+		key: key,
 		typ: typ,
+		db:  db,
 	}
 	rs.keysByName[key.Name()] = key
 }
@@ -244,9 +246,11 @@ func parsePath(path string) (storeName string, subpath string, err sdk.Error) {
 //----------------------------------------
 
 func (rs *rootMultiStore) loadCommitStoreFromParams(id CommitID, params storeParams) (store CommitStore, err error) {
-	db := rs.db
+	var db dbm.DB
 	if params.db != nil {
-		db = params.db
+		db = dbm.NewPrefixDB(params.db, []byte("s/_/"))
+	} else {
+		db = dbm.NewPrefixDB(rs.db, []byte("s/k:"+params.key.Name()+"/"))
 	}
 	switch params.typ {
 	case sdk.StoreTypeMulti:
@@ -264,7 +268,7 @@ func (rs *rootMultiStore) loadCommitStoreFromParams(id CommitID, params storePar
 }
 
 func (rs *rootMultiStore) nameToKey(name string) StoreKey {
-	for key, _ := range rs.storesParams {
+	for key := range rs.storesParams {
 		if key.Name() == name {
 			return key
 		}
@@ -276,6 +280,7 @@ func (rs *rootMultiStore) nameToKey(name string) StoreKey {
 // storeParams
 
 type storeParams struct {
+	key StoreKey
 	db  dbm.DB
 	typ StoreType
 }
@@ -375,10 +380,11 @@ func commitStores(version int64, storeMap map[StoreKey]CommitStore) commitInfo {
 		storeInfos = append(storeInfos, si)
 	}
 
-	return commitInfo{
+	ci := commitInfo{
 		Version:    version,
 		StoreInfos: storeInfos,
 	}
+	return ci
 }
 
 // Gets commitInfo from disk.

@@ -201,7 +201,7 @@ type MutualUnbondMsg struct {
 	Address sdk.Address `json:"address"`
 }
 
-func NewMutualMutualUnbondMsg(policyAddr sdk.Address, addr sdk.Address) MutualUnbondMsg {
+func NewMutualUnbondMsg(policyAddr sdk.Address, addr sdk.Address) MutualUnbondMsg {
 	return MutualUnbondMsg{
 		PolicyAddress: policyAddr,
 		Address: addr,

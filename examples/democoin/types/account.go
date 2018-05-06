@@ -15,7 +15,7 @@ var _ sdk.Account = (*AppAccount)(nil)
 // extending auth.BaseAccount with custom fields.
 //
 // This is compatible with the stock auth.AccountStore, since
-// auth.AccountStore uses the flexible go-wire library.
+// auth.AccountStore uses the flexible go-amino library.
 type AppAccount struct {
 	auth.BaseAccount
 	Name string `json:"name"`
@@ -45,8 +45,8 @@ func GetAccountDecoder(cdc *wire.Codec) sdk.AccountDecoder {
 // State to Unmarshal
 type GenesisState struct {
 	Accounts    []*GenesisAccount `json:"accounts"`
-	PowGenesis  pow.PowGenesis    `json:"pow"`
-	CoolGenesis cool.CoolGenesis  `json:"cool"`
+	POWGenesis  pow.Genesis       `json:"pow"`
+	CoolGenesis cool.Genesis      `json:"cool"`
 }
 
 // GenesisAccount doesn't need pubkey or sequence

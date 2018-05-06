@@ -5,6 +5,7 @@ import (
 	"sort"
 	"sync"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	cmn "github.com/tendermint/tmlibs/common"
 )
 
@@ -25,13 +26,12 @@ type cacheKVStore struct {
 
 var _ CacheKVStore = (*cacheKVStore)(nil)
 
+// nolint
 func NewCacheKVStore(parent KVStore) *cacheKVStore {
-
 	ci := &cacheKVStore{
 		cache:  make(map[string]cValue),
 		parent: parent,
 	}
-
 	return ci
 }
 
@@ -134,6 +134,16 @@ func (ci *cacheKVStore) ReverseIterator(start, end []byte) Iterator {
 	return ci.iterator(start, end, false)
 }
 
+// Implements KVStore.
+func (ci *cacheKVStore) SubspaceIterator(prefix []byte) Iterator {
+	return ci.iterator(prefix, sdk.PrefixEndBytes(prefix), true)
+}
+
+// Implements KVStore.
+func (ci *cacheKVStore) ReverseSubspaceIterator(prefix []byte) Iterator {
+	return ci.iterator(prefix, sdk.PrefixEndBytes(prefix), false)
+}
+
 func (ci *cacheKVStore) iterator(start, end []byte, ascending bool) Iterator {
 	var parent, cache Iterator
 	if ascending {
@@ -159,9 +169,8 @@ func (ci *cacheKVStore) dirtyItems(ascending bool) []cmn.KVPair {
 	sort.Slice(items, func(i, j int) bool {
 		if ascending {
 			return bytes.Compare(items[i].Key, items[j].Key) < 0
-		} else {
-			return bytes.Compare(items[i].Key, items[j].Key) > 0
 		}
+		return bytes.Compare(items[i].Key, items[j].Key) > 0
 	})
 	return items
 }

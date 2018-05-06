@@ -25,7 +25,7 @@ func defaultLogger() log.Logger {
 func newBaseApp(name string) *BaseApp {
 	logger := defaultLogger()
 	db := dbm.NewMemDB()
-	return NewBaseApp(name, logger, db)
+	return NewBaseApp(name, nil, logger, db)
 }
 
 func TestMountStores(t *testing.T) {
@@ -35,15 +35,12 @@ func TestMountStores(t *testing.T) {
 
 	// make some cap keys
 	capKey1 := sdk.NewKVStoreKey("key1")
-	db1 := dbm.NewMemDB()
 	capKey2 := sdk.NewKVStoreKey("key2")
-	db2 := dbm.NewMemDB()
 
 	// no stores are mounted
 	assert.Panics(t, func() { app.LoadLatestVersion(capKey1) })
 
-	app.MountStoreWithDB(capKey1, sdk.StoreTypeIAVL, db1)
-	app.MountStoreWithDB(capKey2, sdk.StoreTypeIAVL, db2)
+	app.MountStoresIAVL(capKey1, capKey2)
 
 	// stores are mounted
 	err := app.LoadLatestVersion(capKey1)
@@ -62,7 +59,7 @@ func TestLoadVersion(t *testing.T) {
 	logger := defaultLogger()
 	db := dbm.NewMemDB()
 	name := t.Name()
-	app := NewBaseApp(name, logger, db)
+	app := NewBaseApp(name, nil, logger, db)
 
 	// make a cap key and mount the store
 	capKey := sdk.NewKVStoreKey("main")
@@ -84,7 +81,7 @@ func TestLoadVersion(t *testing.T) {
 	commitID := sdk.CommitID{1, res.Data}
 
 	// reload
-	app = NewBaseApp(name, logger, db)
+	app = NewBaseApp(name, nil, logger, db)
 	app.MountStoresIAVL(capKey)
 	err = app.LoadLatestVersion(capKey) // needed to make stores non-nil
 	assert.Nil(t, err)
@@ -150,16 +147,13 @@ func TestInitChainer(t *testing.T) {
 	name := t.Name()
 	db := dbm.NewMemDB()
 	logger := defaultLogger()
-	app := NewBaseApp(name, logger, db)
+	app := NewBaseApp(name, nil, logger, db)
 	// make cap keys and mount the stores
 	// NOTE/TODO: mounting multiple stores is broken
 	// see https://github.com/cosmos/cosmos-sdk/issues/532
 	capKey := sdk.NewKVStoreKey("main")
-	db1 := dbm.NewMemDB()
 	capKey2 := sdk.NewKVStoreKey("key2")
-	db2 := dbm.NewMemDB()
-	app.MountStoreWithDB(capKey, sdk.StoreTypeIAVL, db1)
-	app.MountStoreWithDB(capKey2, sdk.StoreTypeIAVL, db2)
+	app.MountStoresIAVL(capKey, capKey2)
 	err := app.LoadLatestVersion(capKey) // needed to make stores non-nil
 	assert.Nil(t, err)
 
@@ -190,9 +184,8 @@ func TestInitChainer(t *testing.T) {
 	assert.Equal(t, value, res.Value)
 
 	// reload app
-	app = NewBaseApp(name, logger, db)
-	app.MountStoreWithDB(capKey, sdk.StoreTypeIAVL, db1)
-	app.MountStoreWithDB(capKey2, sdk.StoreTypeIAVL, db2)
+	app = NewBaseApp(name, nil, logger, db)
+	app.MountStoresIAVL(capKey, capKey2)
 	err = app.LoadLatestVersion(capKey) // needed to make stores non-nil
 	assert.Nil(t, err)
 	app.SetInitChainer(initChainer)
@@ -247,7 +240,7 @@ func TestDeliverTx(t *testing.T) {
 		height := int64((counter / txPerHeight) + 1)
 		assert.Equal(t, height, thisHeader.Height)
 
-		counter += 1
+		counter++
 		return sdk.Result{}
 	})
 
@@ -325,13 +318,12 @@ type testUpdatePowerTx struct {
 
 const msgType = "testUpdatePowerTx"
 
-func (tx testUpdatePowerTx) Type() string                            { return msgType }
-func (tx testUpdatePowerTx) Get(key interface{}) (value interface{}) { return nil }
-func (tx testUpdatePowerTx) GetMsg() sdk.Msg                         { return tx }
-func (tx testUpdatePowerTx) GetSignBytes() []byte                    { return nil }
-func (tx testUpdatePowerTx) ValidateBasic() sdk.Error                { return nil }
-func (tx testUpdatePowerTx) GetSigners() []sdk.Address               { return nil }
-func (tx testUpdatePowerTx) GetSignatures() []sdk.StdSignature       { return nil }
+func (tx testUpdatePowerTx) Type() string                      { return msgType }
+func (tx testUpdatePowerTx) GetMsg() sdk.Msg                   { return tx }
+func (tx testUpdatePowerTx) GetSignBytes() []byte              { return nil }
+func (tx testUpdatePowerTx) ValidateBasic() sdk.Error          { return nil }
+func (tx testUpdatePowerTx) GetSigners() []sdk.Address         { return nil }
+func (tx testUpdatePowerTx) GetSignatures() []sdk.StdSignature { return nil }
 
 func TestValidatorChange(t *testing.T) {
 
@@ -432,7 +424,7 @@ func makePubKey(secret string) crypto.PubKey {
 
 func makePrivKey(secret string) crypto.PrivKey {
 	privKey := crypto.GenPrivKeyEd25519FromSecret([]byte(secret))
-	return privKey.Wrap()
+	return privKey
 }
 
 func secret(index int) string {

@@ -14,48 +14,6 @@
   revision = "2be2f12b358dc57d70b8f501b00be450192efbc3"
 
 [[projects]]
-  name = "github.com/cosmos/cosmos-sdk"
-  packages = [
-    "baseapp",
-    "client",
-    "client/context",
-    "client/core",
-    "client/keys",
-    "client/lcd",
-    "client/rpc",
-    "client/tx",
-    "examples/basecoin/app",
-    "examples/basecoin/types",
-    "examples/democoin/app",
-    "examples/democoin/types",
-    "examples/democoin/x/cool",
-    "examples/democoin/x/cool/commands",
-    "examples/democoin/x/pow",
-    "examples/democoin/x/pow/commands",
-    "examples/democoin/x/sketchy",
-    "mock",
-    "server",
-    "store",
-    "types",
-    "version",
-    "wire",
-    "x/auth",
-    "x/auth/commands",
-    "x/auth/rest",
-    "x/bank",
-    "x/bank/commands",
-    "x/bank/rest",
-    "x/ibc",
-    "x/ibc/commands",
-    "x/ibc/rest",
-    "x/simplestake",
-    "x/simplestake/commands",
-    "x/stake"
-  ]
-  revision = "40ed65d1103a9490b66e236682d81dc00f641765"
-  version = "v0.14.1"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -500,6 +458,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "86bba2dff5a92502b1499a07519f1c4924e63c216a6971d5da060531ca42ea70"
+  inputs-digest = "669e58d0c4eb48e506f1abc66119c2f21b6600d4e08e8875ac83567b5c721565"
   solver-name = "gps-cdcl"
   solver-version = 1
