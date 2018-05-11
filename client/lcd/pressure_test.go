@@ -14,6 +14,7 @@ import (
 	"time"
 	"github.com/stretchr/testify/require"
 	//"sync"
+        tests "github.com/cosmos/cosmos-sdk/tests"
 	"sync"
 )
 
@@ -111,7 +112,7 @@ func TestBatchSendCoins(t *testing.T)  {
 
 					// create TX
 					resultTx := doSendToSpecifyAddress(t, port, seed, recieveAddress)
-					waitForHeight(resultTx.Height + 1)
+					tests.WaitForHeight(resultTx.Height + 1, port)
 
 					// check if tx was commited
 					assert.Equal(t, uint32(0), resultTx.CheckTx.Code)
