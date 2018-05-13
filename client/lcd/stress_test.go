@@ -11,8 +11,8 @@ package lcd
  *		gaiad start --home=$HOME/.gaiad1  &> gaia1.log & NODE1_PID=$!
  * 2. Start the REST service
  *		gaiacli rest-server -a tcp://localhost:1317 -c inschain -n tcp://localhost:46657 &
- * 3. Start the test program
- *		go test inschain-tendermint/client/lcd/ -run TestBatchOperations -v
+ * 3. Start the test program (default timeout is 10 minutes, increase to 5 hours)
+ *		go test inschain-tendermint/client/lcd/ -run TestBatchOperations -timeout 300m -v
  * 4. (optional) To clean up (note the step only delete local keys, balances on the blockchain will stay forever)
  *      go test inschain-tendermint/client/lcd/ -run TestBatchDeleteKeys -v
  */
@@ -57,7 +57,7 @@ var (
 	inschainPort = "1317" //Note: Change to the LCD port you start with "gaiacli rest-server -a tcp://localhost:<port> -c inschain -n tcp://localhost:46657 &"
 
 	//Information for accounts to be created and tested
-	numOfAccounts      = 100              //number of test accounts to create and test
+	numOfAccounts      = 500              //number of test accounts to create and test
 	testUserNamePrefix = "TestStressUser" //Test user names are in the format of testuser<seq_num>
 	testPassword       = "Userpass123"    //Test user password
 
@@ -194,21 +194,14 @@ func testGetAccount(t *testing.T, userAddr string) InschainBaseAccount {
 	//Note returned data is in the format of {"type":"6C54F73C9F2E08","value":{"address":"37A2CBF0EFFD588EA97EF7B5198DE3ACFBCBC579","coins":[{"denom":"getx","amount":1000000}],"public_key":null,"sequence":0}}
 	//The data have one more layer {type: "", value: {account}} on top of the account struct and the public_key is not the crypto.PubKey struct
 	var accInfo GetAccountResult
-	var acc InschainBaseAccount
-
 	err := json.Unmarshal([]byte(body), &accInfo)
 	if err != nil {
 		fmt.Printf("UnmarshalTypeError: Type[%v]\n", err)
 	}
-
-	require.Nil(t, err)
-	accObj, err := json.Marshal(accInfo.Value)
-
-	err = cdc.UnmarshalJSON([]byte(accObj), &acc)
 	require.Nil(t, err)
 	numOfGetTxs++
 
-	return acc
+	return accInfo.Value
 }
 
 /*
