@@ -20,6 +20,8 @@ func NewHandler(k Keeper) sdk.Handler {
 			return handleBondMsg(ctx, k, msg)
 		case MutualUnbondMsg:
 			return handleMutualUnbondMsg(ctx, k, msg)
+		case MutualPolicyLockMsg:
+			return handleMutualPolicyLockMsg(ctx, k, msg)
 		default:
 			return sdk.ErrUnknownRequest("No match for message type.").Result()
 		}
@@ -33,7 +35,7 @@ func handleNewPolicyMsg(ctx sdk.Context, k Keeper, msg MutualNewPolicyMsg) sdk.R
 	}
 
 	return sdk.Result{
-		Code:	sdk.CodeOK,
+		Code:	sdk.ABCICodeOK,
 		Data:   []byte(strconv.FormatInt(power, 10)),
 	}
 }
@@ -45,8 +47,20 @@ func handleProposalMsg(ctx sdk.Context, k Keeper, msg MutualProposalMsg) sdk.Res
 	}
 
 	return sdk.Result{
-		Code:	sdk.CodeOK,
+		Code:	sdk.ABCICodeOK,
 		Data:   []byte(strconv.FormatInt(power, 10)),
+	}
+}
+
+func handleMutualPolicyLockMsg(ctx sdk.Context, k Keeper, msg MutualPolicyLockMsg) sdk.Result {
+	power, err := k.PolicyLock(ctx, msg.PolicyAddress, msg.Lock)
+	if err != nil {
+		return err.Result()
+	}
+
+	return sdk.Result{
+		Code:	sdk.ABCICodeOK,
+		Data:   []byte(strconv.FormatBool(power)),
 	}
 }
 
@@ -57,7 +71,7 @@ func handlePolicyApprovalMsg(ctx sdk.Context, k Keeper, msg MutualPolicyApproval
 	}
 
 	return sdk.Result{
-		Code:	sdk.CodeOK,
+		Code:	sdk.ABCICodeOK,
 		Data:   []byte(strconv.FormatInt(power, 10)),
 	}
 }
@@ -69,7 +83,7 @@ func handleBondMsg(ctx sdk.Context, k Keeper, msg MutualBondMsg) sdk.Result {
 	}
 
 	return sdk.Result{
-		Code:	sdk.CodeOK,
+		Code:	sdk.ABCICodeOK,
 		Data: 	[]byte(strconv.FormatInt(power, 10)),
 	}
 }
@@ -87,7 +101,7 @@ func handleMutualUnbondMsg(ctx sdk.Context, k Keeper, msg MutualUnbondMsg) sdk.R
 */
 
 	return sdk.Result{
-		Code:       sdk.CodeOK,
+		Code:       sdk.ABCICodeOK,
 		Data:		[]byte(addr),
 //		ValidatorUpdates: abci.Validators{valSet},
 	}

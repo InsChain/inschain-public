@@ -19,10 +19,11 @@ var (
 )
 
 type Keeper struct {
-	ck bank.CoinKeeper
+	ck bank.Keeper
 
 	key sdk.StoreKey
 	cdc *wire.Codec
+	codespace sdk.CodespaceType
 }
 
 // get the key for the policy
@@ -35,35 +36,36 @@ func GetPolicyMemberKey(policyAddr sdk.Address, memberAddr sdk.Address) []byte {
 	return append(append(MemberKeyPrefix, policyAddr.Bytes()...), memberAddr.Bytes()...)
 }
 
-func NewKeeper(key sdk.StoreKey, coinKeeper bank.CoinKeeper) Keeper {
-	cdc := wire.NewCodec()
+func NewKeeper(cdc *wire.Codec, key sdk.StoreKey, coinKeeper bank.Keeper, codespace sdk.CodespaceType) Keeper {
 	return Keeper{
 		key: key,
 		cdc: cdc,
 		ck:  coinKeeper,
+		codespace: codespace,
 	}
 }
 
 // -----------------------
 // policy functions
 
-func (k Keeper) getPolicyInfo(ctx sdk.Context, policyAddr sdk.Address) policyInfo {
+func (k Keeper) getPolicyInfo(ctx sdk.Context, policyAddr sdk.Address) PolicyInfo {
 	store := ctx.KVStore(k.key)
 	bz := store.Get(GetPolicyKey(policyAddr))
 	if bz == nil {
-		return policyInfo{}
+		return PolicyInfo{}
 	}
-	var pi policyInfo
-	err := k.cdc.UnmarshalBinary(bz, &pi)
+	var pi PolicyInfo
+	err := k.cdc.UnmarshalJSON(bz, &pi)
 	if err != nil {
 		panic(err)
 	}
 	return pi
 }
 
-func (k Keeper) setPolicyInfo(ctx sdk.Context, policyAddr sdk.Address, pi policyInfo) {
+func (k Keeper) setPolicyInfo(ctx sdk.Context, policyAddr sdk.Address, pi PolicyInfo) {
 	store := ctx.KVStore(k.key)
-	bz, err := k.cdc.MarshalBinary(pi)
+	// marshal the policy and add to the state
+	bz, err := k.cdc.MarshalJSON(pi)
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +75,7 @@ func (k Keeper) setPolicyInfo(ctx sdk.Context, policyAddr sdk.Address, pi policy
 func (k Keeper) NewPolicy(ctx sdk.Context, policyAddr sdk.Address) (int64, sdk.Error) {
 	pi := k.getPolicyInfo(ctx, policyAddr)
 	if pi.PolicyAddr == nil {
-		pi = policyInfo{
+		pi = PolicyInfo{
 			PolicyAddr:		policyAddr,
 			ClaimAddr:		nil,
 			ClaimAmount:	0,
@@ -91,13 +93,13 @@ func (k Keeper) NewPolicy(ctx sdk.Context, policyAddr sdk.Address) (int64, sdk.E
 func (k Keeper) Claim(ctx sdk.Context, policyAddr sdk.Address, claimAddr sdk.Address, amount sdk.Coin) (int64, sdk.Error) {
 	pi := k.getPolicyInfo(ctx, policyAddr)
 	if pi.PolicyAddr == nil {
-		return 0, ErrNullPolicy()
+		return 0, ErrNullPolicy(k.codespace)
 	}
-	if pi.ClaimAddr != nil {
-		return 0, ErrClaimExisting()
+	if pi.ClaimAddr != nil && len(pi.ClaimAddr) > 1 {
+		return 0, ErrClaimExisting(k.codespace)
 	}
 	if pi.TotalAmount < amount.Amount {
-		return 0, ErrClaimAmtExceed()
+		return 0, ErrClaimAmtExceed(k.codespace)
 	}
 	
 	pi.ClaimAddr = claimAddr
@@ -109,13 +111,13 @@ func (k Keeper) Claim(ctx sdk.Context, policyAddr sdk.Address, claimAddr sdk.Add
 func (k Keeper) ApproveClaim(ctx sdk.Context, policyAddr sdk.Address, claimAddr sdk.Address, approval bool) (bool, int64, sdk.Error) {
 	pi := k.getPolicyInfo(ctx, policyAddr)
 	if pi.PolicyAddr == nil {
-		return false, 0, ErrNullPolicy()
+		return false, 0, ErrNullPolicy(k.codespace)
 	}
 	if pi.ClaimAddr == nil {
-		return false, 0, ErrNullClaim()
+		return false, 0, ErrNullClaim(k.codespace)
 	}
 	if pi.ClaimAddr.String() != claimAddr.String() {
-		return false, 0, ErrInvalidClaim()
+		return false, 0, ErrInvalidClaim(k.codespace)
 	}
 	
 	pi.ClaimApproved = approval
@@ -127,7 +129,7 @@ func (k Keeper) ApproveClaim(ctx sdk.Context, policyAddr sdk.Address, claimAddr 
 func (k Keeper) PolicyLock(ctx sdk.Context, policyAddr sdk.Address, locked bool) (bool, sdk.Error) {
 	pi := k.getPolicyInfo(ctx, policyAddr)
 	if pi.PolicyAddr == nil {
-		return false, ErrNullPolicy()
+		return false, ErrNullPolicy(k.codespace)
 	}
 	
 	pi.Lock = locked
@@ -138,23 +140,23 @@ func (k Keeper) PolicyLock(ctx sdk.Context, policyAddr sdk.Address, locked bool)
 // -----------------------
 // policy member functions
 
-func (k Keeper) getBondInfo(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address) bondInfo {
+func (k Keeper) getBondInfo(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address) BondInfo {
 	store := ctx.KVStore(k.key)
 	bz := store.Get(GetPolicyMemberKey(policyAddr,addr))
 	if bz == nil {
-		return bondInfo{}
+		return BondInfo{}
 	}
-	var bi bondInfo
-	err := k.cdc.UnmarshalBinary(bz, &bi)
+	var bi BondInfo
+	err := k.cdc.UnmarshalJSON(bz, &bi)
 	if err != nil {
 		panic(err)
 	}
 	return bi
 }
 
-func (k Keeper) setBondInfo(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address, bi bondInfo) {
+func (k Keeper) setBondInfo(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address, bi BondInfo) {
 	store := ctx.KVStore(k.key)
-	bz, err := k.cdc.MarshalBinary(bi)
+	bz, err := k.cdc.MarshalJSON(bi)
 	if err != nil {
 		panic(err)
 	}
@@ -168,11 +170,11 @@ func (k Keeper) deleteBondInfo(ctx sdk.Context, policyAddr sdk.Address, addr sdk
 
 func (k Keeper) Bond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address, stake sdk.Coin) (int64, sdk.Error) {
 	if stake.Denom != stakingToken {
-		return 0, ErrIncorrectStakingToken()
+		return 0, ErrIncorrectStakingToken(k.codespace)
 	}
 	pi := k.getPolicyInfo(ctx, policyAddr)
 	if pi.PolicyAddr == nil {
-		return 0, ErrNullPolicy()
+		return 0, ErrNullPolicy(k.codespace)
 	}
 
 	_, err := k.ck.SubtractCoins(ctx, addr, []sdk.Coin{stake})
@@ -182,7 +184,7 @@ func (k Keeper) Bond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address, 
 
 	bi := k.getBondInfo(ctx, policyAddr, addr)
 	if bi.PolicyAddr == nil {
-		bi = bondInfo{
+		bi = BondInfo{
 				PolicyAddr:		policyAddr,
 				MemberAddr:		addr,
 				Amount:			0,
@@ -201,14 +203,14 @@ func (k Keeper) Bond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address, 
 func (k Keeper) Unbond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address) (sdk.Address, int64, sdk.Error) {
 	bi := k.getBondInfo(ctx, policyAddr, addr)
 	if bi.PolicyAddr == nil {
-		return sdk.Address{}, 0, ErrInvalidUnbond()
+		return sdk.Address{}, 0, ErrInvalidUnbond(k.codespace)
 	}
 	pi := k.getPolicyInfo(ctx, policyAddr)
 	if pi.PolicyAddr == nil {
-		return sdk.Address{}, 0, ErrNullPolicy()
-	}
-	if pi.Lock || pi.ClaimAddr != nil {
-		return sdk.Address{}, 0, ErrPolicyLocked()
+		return sdk.Address{}, 0, ErrNullPolicy(k.codespace)
+	} 
+	if pi.Lock == true || (pi.ClaimAddr != nil && len(pi.ClaimAddr) > 1) {
+		return sdk.Address{}, 0, ErrPolicyLocked(k.codespace)
 	}
 
 	k.deleteBondInfo(ctx, policyAddr, addr)
@@ -216,6 +218,8 @@ func (k Keeper) Unbond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address
 	pi.Count -= 1
 	pi.TotalAmount -= bi.Amount
 	
+	k.setPolicyInfo(ctx, policyAddr, pi)
+
 	returnedBond := sdk.Coin{stakingToken, bi.Amount}
 
 	_, err := k.ck.AddCoins(ctx, addr, []sdk.Coin{returnedBond})
@@ -230,12 +234,12 @@ func (k Keeper) Unbond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address
 
 func (k Keeper) bondWithoutCoins(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address, stake sdk.Coin) (int64, sdk.Error) {
 	if stake.Denom != stakingToken {
-		return 0, ErrIncorrectStakingToken()
+		return 0, ErrIncorrectStakingToken(k.codespace)
 	}
 
 	bi := k.getBondInfo(ctx, policyAddr, addr)
 	if bi.PolicyAddr == nil {
-		bi = bondInfo{
+		bi = BondInfo{
 				PolicyAddr:		policyAddr,
 				MemberAddr:		addr,
 				Amount:			0,
@@ -251,7 +255,7 @@ func (k Keeper) bondWithoutCoins(ctx sdk.Context, policyAddr sdk.Address, addr s
 func (k Keeper) unbondWithoutCoins(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address) (sdk.Address, int64, sdk.Error) {
 	bi := k.getBondInfo(ctx, policyAddr, addr)
 	if bi.PolicyAddr == nil {
-		return sdk.Address{}, 0, ErrInvalidUnbond()
+		return sdk.Address{}, 0, ErrInvalidUnbond(k.codespace)
 	}
 	k.deleteBondInfo(ctx, policyAddr, addr)
 

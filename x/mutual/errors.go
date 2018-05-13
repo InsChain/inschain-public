@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	DefaultCodespace sdk.CodespaceType = 6
 	// mutual errors reserve 500 - 599.
 	CodeNullPolicy        	sdk.CodeType = 500
 	CodeNullClaim        	sdk.CodeType = 501
@@ -18,48 +19,48 @@ const (
 	CodeNullAddress			sdk.CodeType = 509
 )
 
-func ErrIncorrectStakingToken() sdk.Error {
-	return newError(CodeIncorrectToken, "")
+func ErrIncorrectStakingToken(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeIncorrectToken, "")
 }
 
-func ErrNullPolicy() sdk.Error {
-	return newError(CodeNullPolicy, "")
+func ErrNullPolicy(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeNullPolicy, "")
 }
 
-func ErrNullClaim() sdk.Error {
-	return newError(CodeNullClaim, "")
+func ErrNullClaim(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeNullClaim, "")
 }
 
-func ErrInvalidClaim() sdk.Error {
-	return newError(CodeInvalidClaim, "")
+func ErrInvalidClaim(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeInvalidClaim, "")
 }
 
-func ErrInvalidUnbond() sdk.Error {
-	return newError(CodeInvalidUnbond, "")
+func ErrInvalidUnbond(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeInvalidUnbond, "")
 }
 
-func ErrEmptyStake() sdk.Error {
-	return newError(CodeEmptyStake, "")
+func ErrEmptyStake(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeEmptyStake, "")
 }
 
-func ErrClaimExisting() sdk.Error {
-	return newError(CodeClaimExisting, "")
+func ErrClaimExisting(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeClaimExisting, "")
 }
 
-func ErrClaimAmtExceed() sdk.Error {
-	return newError(CodeClaimAmtExceed, "")
+func ErrClaimAmtExceed(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeClaimAmtExceed, "")
 }
 
-func ErrPolicyLocked() sdk.Error {
-	return newError(CodePolicyLocked, "")
+func ErrPolicyLocked(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodePolicyLocked, "")
 }
 
-func ErrNullAddress() sdk.Error {
-	return newError(CodeNullAddress, "")
+func ErrNullAddress(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeNullAddress, "")
 }
 // -----------------------------
 // Helpers
 
-func newError(code sdk.CodeType, msg string) sdk.Error {
-	return sdk.NewError(code, msg)
+func newError(codespace sdk.CodespaceType, code sdk.CodeType, msg string) sdk.Error {
+	return sdk.NewError(codespace, code, msg)
 }

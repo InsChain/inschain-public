@@ -22,19 +22,10 @@ else
 	go build $(BUILD_FLAGS) -o build/gaiacli ./cmd/gaia/cmd/gaiacli
 endif
 
-####	go build $(BUILD_FLAGS) -o build/mutualcli.exe ./examples/mutual/cmd/mutualcli
 build_mutual:
 ifeq ($(OS),Windows_NT)
 	go build $(BUILD_FLAGS) -o build/mutuald.exe ./examples/mutual/cmd/mutuald
-else
-	go build $(BUILD_FLAGS) -o build/mutuald ./examples/mutual/cmd/mutuald
-	go build $(BUILD_FLAGS) -o build/mutualcli ./examples/mutual/cmd/mutualcli
-endif
-
-####	go build $(BUILD_FLAGS) -o build/mutualcli.exe ./examples/mutual/cmd/mutualcli
-build_mutual:
-ifeq ($(OS),Windows_NT)
-	go build $(BUILD_FLAGS) -o build/mutuald.exe ./examples/mutual/cmd/mutuald
+	go build $(BUILD_FLAGS) -o build/mutualcli.exe ./examples/mutual/cmd/mutualcli
 else
 	go build $(BUILD_FLAGS) -o build/mutuald ./examples/mutual/cmd/mutuald
 	go build $(BUILD_FLAGS) -o build/mutualcli ./examples/mutual/cmd/mutualcli
@@ -56,10 +47,6 @@ endif
 install: 
 	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiad
 	go install $(BUILD_FLAGS) ./cmd/gaia/cmd/gaiacli
-
-install_mutual: 
-	go install $(BUILD_FLAGS) ./examples/mutual/cmd/mutuald
-	go install $(BUILD_FLAGS) ./examples/mutual/cmd/mutualcli
 
 install_mutual: 
 	go install $(BUILD_FLAGS) ./examples/mutual/cmd/mutuald

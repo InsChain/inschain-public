@@ -14,10 +14,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 
 	"github.com/cosmos/cosmos-sdk/version"
-	//authcmd "github.com/cosmos/cosmos-sdk/x/auth/commands"
-	//bankcmd "github.com/cosmos/cosmos-sdk/x/bank/commands"
-	//ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/commands"
-	//simplestakingcmd "github.com/cosmos/cosmos-sdk/x/simplestake/commands"
+	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
+	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/client/cli"
+	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
+
 	mutualcmd "Inschain-tendermint/x/mutual/commands"
 
 	"Inschain-tendermint/examples/mutual/app"
@@ -50,28 +51,29 @@ func main() {
 	rootCmd.AddCommand(client.LineBreak)
 
 	// add query/post commands (custom to binary)
-	//rootCmd.AddCommand(
-	//	client.GetCommands(
-	//		authcmd.GetAccountCmd("main", cdc, types.GetAccountDecoder(cdc)),
-	//	)...)
-	//rootCmd.AddCommand(
-	//	client.PostCommands(
-	//		bankcmd.SendTxCmd(cdc),
-	//	)...)
-	//rootCmd.AddCommand(
-	//	client.PostCommands(
-	//		ibccmd.IBCTransferCmd(cdc),
-	//	)...)
-	//rootCmd.AddCommand(
-	//	client.PostCommands(
-	//		ibccmd.IBCRelayCmd(cdc),
-	//		simplestakingcmd.BondTxCmd(cdc),
-	//	)...)
-	//rootCmd.AddCommand(
-	//	client.PostCommands(
-	//		simplestakingcmd.UnbondTxCmd(cdc),
-	//	)...)
-// TODO : JH add mutual commands
+	rootCmd.AddCommand(
+		client.GetCommands(
+			authcmd.GetAccountCmd("acc", cdc, types.GetAccountDecoder(cdc)),
+			mutualcmd.GetPolicyInfoCmd("mutual", cdc),
+			mutualcmd.GetBondInfoCmd("mutual", cdc),
+		)...)
+
+	rootCmd.AddCommand(
+		client.PostCommands(
+			bankcmd.SendTxCmd(cdc),
+			ibccmd.IBCTransferCmd(cdc),
+			ibccmd.IBCRelayCmd(cdc),
+			stakecmd.GetCmdDeclareCandidacy(cdc),
+			stakecmd.GetCmdEditCandidacy(cdc),
+			stakecmd.GetCmdDelegate(cdc),
+			stakecmd.GetCmdUnbond(cdc),
+			mutualcmd.NewPolicyCmd(cdc),
+			mutualcmd.ProposalCmd(cdc),
+			mutualcmd.PolicyApprovalCmd(cdc),
+			mutualcmd.BondTxCmd(cdc),
+			mutualcmd.UnbondTxCmd(cdc),
+			mutualcmd.PolicyLockCmd(cdc),
+		)...)
 
 	// add proxy, version and key info
 	rootCmd.AddCommand(
@@ -83,6 +85,6 @@ func main() {
 	)
 
 	// prepare and add flags
-	executor := cli.PrepareMainCmd(rootCmd, "BC", os.ExpandEnv("$HOME/.mutualcli"))
+	executor := cli.PrepareMainCmd(rootCmd, "MC", os.ExpandEnv("$HOME/.mutualcli"))
 	executor.Execute()
 }
