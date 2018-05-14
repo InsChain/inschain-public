@@ -12,7 +12,7 @@ import (
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 
-	"Inschain-tendermint/examples/mutual/app"
+	"inschain-tendermint/examples/mutual/app"
 	"github.com/cosmos/cosmos-sdk/server"
 )
 

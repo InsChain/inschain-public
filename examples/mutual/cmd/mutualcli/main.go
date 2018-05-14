@@ -19,10 +19,10 @@ import (
 	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/client/cli"
 	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
 
-	mutualcmd "Inschain-tendermint/x/mutual/commands"
+	mutualcmd "inschain-tendermint/x/mutual/commands"
 
-	"Inschain-tendermint/examples/mutual/app"
-	"Inschain-tendermint/examples/mutual/types"
+	"inschain-tendermint/examples/mutual/app"
+	"inschain-tendermint/examples/mutual/types"
 )
 
 // rootCmd is the entry point for this binary

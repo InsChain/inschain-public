@@ -14,7 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 
-	"Inschain-tendermint/x/mutual"
+	"inschain-tendermint/x/mutual"
 )
 
 const (

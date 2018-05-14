@@ -16,9 +16,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 	"github.com/cosmos/cosmos-sdk/x/stake"
-	"Inschain-tendermint/x/mutual"
+	"inschain-tendermint/x/mutual"
 
-	"Inschain-tendermint/examples/mutual/types"
+	"inschain-tendermint/examples/mutual/types"
 )
 
 const (

@@ -40,7 +40,7 @@ import (
 
 /*
  * To run the test, use the following command
- * go test Inschain-tendermint/client/lcd/ -run TestBatchOperations -v
+ * go test inschain-tendermint/client/lcd/ -run TestBatchOperations -v
  *
  */
 
