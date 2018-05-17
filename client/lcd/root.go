@@ -36,7 +36,7 @@ const (
 func ServeCommand(cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rest-server",
-		Short: "Start LCD (light-client daemon), a local REST server, mutual test",
+		Short: "Start LCD (light-client daemon), a local REST server",
 		RunE:  startRESTServerFn(cdc),
 	}
 	cmd.Flags().StringP(flagListenAddr, "a", "tcp://localhost:1317", "Address for server to listen on")
