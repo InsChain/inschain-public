@@ -22,6 +22,7 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
 	ibc "github.com/cosmos/cosmos-sdk/x/ibc/client/rest"
+	mutual "inschain-tendermint/x/mutual/client/rest"
 )
 
 const (
@@ -35,7 +36,7 @@ const (
 func ServeCommand(cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rest-server",
-		Short: "Start LCD (light-client daemon), a local REST server",
+		Short: "Start LCD (light-client daemon), a local REST server, mutual test",
 		RunE:  startRESTServerFn(cdc),
 	}
 	cmd.Flags().StringP(flagListenAddr, "a", "tcp://localhost:1317", "Address for server to listen on")
@@ -83,5 +84,6 @@ func createHandler(cdc *wire.Codec) http.Handler {
 	auth.RegisterRoutes(ctx, r, cdc, "acc")
 	bank.RegisterRoutes(ctx, r, cdc, kb)
 	ibc.RegisterRoutes(ctx, r, cdc, kb)
+	mutual.RegisterRoutes(ctx, r, cdc, kb)
 	return r
 }

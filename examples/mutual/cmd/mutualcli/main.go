@@ -9,7 +9,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/keys"
-	"github.com/cosmos/cosmos-sdk/client/lcd"
+//	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 
@@ -19,10 +19,11 @@ import (
 	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/client/cli"
 	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
 
-	mutualcmd "inschain-tendermint/x/mutual/commands"
+	mutualcmd "inschain-tendermint/x/mutual/client/cli"
 
 	"inschain-tendermint/examples/mutual/app"
 	"inschain-tendermint/examples/mutual/types"
+	"inschain-tendermint/client/lcd"
 )
 
 // rootCmd is the entry point for this binary
