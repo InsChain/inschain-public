@@ -20,9 +20,10 @@ import (
 	//	mutual packages 
 	mutualcmd "inschain-tendermint/x/mutual/client/cli"
 	"inschain-tendermint/client/lcd"
-
-	"github.com/cosmos/cosmos-sdk/cmd/gaia/app"
-
+	// updated app
+	"inschain-tendermint/cmd/gaia/app"
+	// comment out default app
+	//"github.com/cosmos/cosmos-sdk/cmd/gaia/app"
 
 )
 
