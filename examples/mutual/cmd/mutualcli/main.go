@@ -9,6 +9,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/keys"
+// comment out default lcd , to import updated lcd bellow
 //	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -50,13 +51,16 @@ func main() {
 	rootCmd.AddCommand(client.LineBreak)
 	tx.AddCommands(rootCmd, cdc)
 	rootCmd.AddCommand(client.LineBreak)
-
+	// add mutual commands
+	mutualcmd.AddCommands(rootCmd, cdc)
+	rootCmd.AddCommand(client.LineBreak)
+	
 	// add query/post commands (custom to binary)
 	rootCmd.AddCommand(
 		client.GetCommands(
 			authcmd.GetAccountCmd("acc", cdc, types.GetAccountDecoder(cdc)),
-			mutualcmd.GetPolicyInfoCmd("mutual", cdc),
-			mutualcmd.GetBondInfoCmd("mutual", cdc),
+			//mutualcmd.GetPolicyInfoCmd("mutual", cdc),
+			//mutualcmd.GetBondInfoCmd("mutual", cdc),
 		)...)
 
 	rootCmd.AddCommand(
@@ -68,12 +72,12 @@ func main() {
 			stakecmd.GetCmdEditCandidacy(cdc),
 			stakecmd.GetCmdDelegate(cdc),
 			stakecmd.GetCmdUnbond(cdc),
-			mutualcmd.NewPolicyCmd(cdc),
-			mutualcmd.ProposalCmd(cdc),
-			mutualcmd.PolicyApprovalCmd(cdc),
-			mutualcmd.BondTxCmd(cdc),
-			mutualcmd.UnbondTxCmd(cdc),
-			mutualcmd.PolicyLockCmd(cdc),
+			//mutualcmd.NewPolicyCmd(cdc),
+			//mutualcmd.ProposalCmd(cdc),
+			//mutualcmd.PolicyApprovalCmd(cdc),
+			//mutualcmd.BondTxCmd(cdc),
+			//mutualcmd.UnbondTxCmd(cdc),
+			//mutualcmd.PolicyLockCmd(cdc),			
 		)...)
 
 	// add proxy, version and key info

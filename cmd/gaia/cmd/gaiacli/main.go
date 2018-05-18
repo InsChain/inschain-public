@@ -7,7 +7,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/keys"
-	"github.com/cosmos/cosmos-sdk/client/lcd"
+	//	comment out default lcd , to import updated lcd bellow
+	//	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -16,7 +17,13 @@ import (
 	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/client/cli"
 	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
 
+	//	mutual packages 
+	mutualcmd "inschain-tendermint/x/mutual/client/cli"
+	"inschain-tendermint/client/lcd"
+
 	"github.com/cosmos/cosmos-sdk/cmd/gaia/app"
+
+
 )
 
 // rootCmd is the entry point for this binary
@@ -39,6 +46,9 @@ func main() {
 	rpc.AddCommands(rootCmd)
 	rootCmd.AddCommand(client.LineBreak)
 	tx.AddCommands(rootCmd, cdc)
+	rootCmd.AddCommand(client.LineBreak)
+	// add mutual commands
+	mutualcmd.AddCommands(rootCmd, cdc)
 	rootCmd.AddCommand(client.LineBreak)
 
 	// add query/post commands (custom to binary)

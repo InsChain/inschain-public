@@ -9,6 +9,7 @@ import (
 
 	//crypto "github.com/tendermint/go-crypto"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
@@ -23,6 +24,24 @@ const (
 	flagMember = "member"
 	flagApproval = "approval"
 )
+
+// AddCommands adds mutual subcommands
+func AddCommands(cmd *cobra.Command, cdc *wire.Codec) {
+	cmd.AddCommand(
+		client.PostCommands(
+			NewPolicyCmd(cdc),
+			ProposalCmd(cdc),
+			BondTxCmd(cdc),
+			UnbondTxCmd(cdc),
+			PolicyLockCmd(cdc),
+			PolicyApprovalCmd(cdc),
+		)...)
+	cmd.AddCommand(
+		client.GetCommands(
+			GetPolicyInfoCmd("mutual", cdc),
+			GetBondInfoCmd("mutual", cdc),
+		)...)
+}
 
 func NewPolicyCmd(cdc *wire.Codec) *cobra.Command {
 	cmdr := commander{cdc}
