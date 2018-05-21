@@ -55,6 +55,43 @@ type BaseApp struct {
 
 var _ abci.Application = (*BaseApp)(nil)
 
+//Transaction listener extension 
+type TransactionListener struct {
+	listeners map[string][]func(ctx sdk.Context, msg sdk.Msg, result sdk.Result) 
+}
+
+var Listeners TransactionListener
+
+// Add an event listener to the TransactionListener struct instance
+func (tl *TransactionListener) AddListener(event string, handlerFunc func(ctx sdk.Context, msg sdk.Msg, result sdk.Result)) {
+    if tl.listeners == nil {
+        tl.listeners = make(map[string][]func(ctx sdk.Context, msg sdk.Msg, result sdk.Result))
+    }
+    if _, ok := tl.listeners[event]; ok {
+        tl.listeners[event] = append(tl.listeners[event], handlerFunc)
+    } else {
+        tl.listeners[event] = []func(ctx sdk.Context, msg sdk.Msg, result sdk.Result) {handlerFunc}
+    }
+}
+
+// Remove an event listener from the TransactionListener struct instance
+func (tl *TransactionListener) RemoveListener(event string, handlerFunc func(ctx sdk.Context, msg sdk.Msg, result sdk.Result)) {
+    if _, ok := tl.listeners[event]; ok {
+        for i := range tl.listeners[event] {
+	        tl.listeners[event] = append(tl.listeners[event][:i], tl.listeners[event][i+1:]...)
+        }
+    }
+}
+
+// Notify event listeners
+func (tl *TransactionListener) NotifyListeners(ctx sdk.Context, msg sdk.Msg, result sdk.Result) {
+	msgListeners := tl.listeners[msg.Type()]
+	
+    for _, msgListener := range msgListeners {
+	    	msgListener(ctx, msg, result)
+    }
+}
+
 // Create and name new BaseApp
 // NOTE: The db is used to store the version number for now.
 func NewBaseApp(name string, cdc *wire.Codec, logger log.Logger, db dbm.DB) *BaseApp {
@@ -436,6 +473,11 @@ func (app *BaseApp) runTx(isCheckTx bool, txBytes []byte, tx sdk.Tx) (result sdk
 		msCache.Write()
 	}
 
+	//Notify listeners
+	if !isCheckTx {
+		Listeners.NotifyListeners(ctx, msg, result)
+	}
+	
 	return result
 }
 
