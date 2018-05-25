@@ -2,7 +2,6 @@ package lcd
 
 /**
  * This test case makes REST calls for batch account creation, query, transaction, and account deletion. It can be used for unit testing and benchmarking system performance.
- * @author - Beichen
  * @version - 2018/05/12
  * @see - cosmos/cosmos-sdk/client/lcd/lcd_test.go
  *
@@ -45,7 +44,7 @@ import (
  */
 
 var (
-	//Information for init account hosting tokens
+	//Information for init account hosting tokens, which needs to be set up before the test
 	getxCoinDenom  = "getx"
 	getxCoinAmount = int64(10000000)
 
@@ -57,15 +56,17 @@ var (
 	inschainPort = "1317" //Note: Change to the LCD port you start with "gaiacli rest-server -a tcp://localhost:<port> -c inschain -n tcp://localhost:46657 &"
 
 	//Information for accounts to be created and tested
-	numOfAccounts      = 500              //number of test accounts to create and test
+	numOfAccounts      = 1000              //number of test accounts to create and test
 	testUserNamePrefix = "TestStressUser" //Test user names are in the format of testuser<seq_num>
 	testPassword       = "Userpass123"    //Test user password
 
 	amountToSend      = int64(50)                //Amount to be deposited to generated accounts initially
-	amountToWithdraw  = int64(15)                //Amount to be withdrawed to transfer to a given account, must be no greater than amountToSend
+	amountToWithdraw  = int64(1)                //Amount to be withdrawed to transfer to a given account, must be no greater than amountToSend
 	batchSendingError = "Error in batch sending" //Error message for problems during batch transferring
 
 	numOfGetTxs, numOfSendTxs, numOfCreateTxs, numOfDeleteTxs int64
+	
+	userMap = make(map[string]InschainBaseAccount) //Map for keeping user name/account mapping
 )
 
 type GetAccountResult struct {
@@ -97,7 +98,7 @@ func (acc *InschainBaseAccount) GetSequence() int64 {
 
 //Helper method to display the error message then abort the process
 func fail(err error) {
-	fmt.Printf("Error: %s", err.Error())
+	fmt.Printf("+++++Error: %v", err)
 	os.Exit(1)
 }
 
@@ -161,6 +162,30 @@ func TestGetKeys(t *testing.T) {
 	fmt.Println(userKey)
 	fmt.Println("<<TestGetKeys")
 	numOfGetTxs++
+}
+
+//Test load account name/address mapping into a map
+func TestLoadUserAccountMapping(t *testing.T) {
+	start := time.Now()
+	fmt.Println("Start time is :", start)
+	
+	fmt.Println("Load account info :")
+	for i := 0; i < numOfAccounts; i++ {
+		userName := testUserNamePrefix + strconv.Itoa(i)
+
+		//get address with username
+		keyEndPoint := fmt.Sprintf("/keys/%s", userName)
+		res, body := request(t, inschainPort, "GET", keyEndPoint, nil)
+		require.Equal(t, http.StatusOK, res.StatusCode, body)
+		var userKey keys.KeyOutput
+		json.Unmarshal([]byte(body), &userKey)
+		userAddress := userKey.Address
+		
+		userAccount := testGetAccount(t, userAddress)
+		userMap[userName] = userAccount
+	}
+	timespan := time.Since(start).Seconds()
+	fmt.Printf("Used time for loading %d accounts is %.2fs", numOfAccounts, timespan)
 }
 
 //Test get accounts
@@ -287,31 +312,27 @@ func TestBatchSendCoins(t *testing.T) {
 //Test batch withdraw coins from all accounts for transferring to one account in parallel
 func TestBatchWithdrawCoins(t *testing.T) {
 	fmt.Println(">>TestBatchWithdrawCoins")
-	var ch = make(chan string)
+	var ch = make(chan string, numOfAccounts)
+
+	TestLoadUserAccountMapping(t)
 
 	//set start time
 	start := time.Now()
-	fmt.Println("Start time is :", start)
-
 	//Receiver - use test user with sequence number 0
 	receiveUser := testUserNamePrefix + "0"
-	//get address with username
-	keyEndPoint := fmt.Sprintf("/keys/%s", receiveUser)
-	res, body := request(t, inschainPort, "GET", keyEndPoint, nil)
-	require.Equal(t, http.StatusOK, res.StatusCode, body)
-	var userKey keys.KeyOutput
-	json.Unmarshal([]byte(body), &userKey)
-	receiveAddress := userKey.Address
+	receiveAddress := userMap[receiveUser].Address.String()
+	fmt.Printf("Receiver address is %s\n", receiveAddress)	
 
 	//Transfer from all accounts other than the receiver
 	for i := 1; i < numOfAccounts; i++ {
 		sendUser := testUserNamePrefix + strconv.Itoa(i)
 		go withdrawToken(t, sendUser, testPassword, receiveAddress, ch, amountToWithdraw)
+		time.Sleep(8*time.Millisecond)
 	}
 
 	for i := 1; i < numOfAccounts; i++ {
 		message := <-ch
-		fmt.Println(message)
+		fmt.Printf("+++++counter %d: %s\n", i, message)
 		assert.False(t, strings.Contains(message, batchSendingError))
 	}
 
@@ -322,33 +343,24 @@ func TestBatchWithdrawCoins(t *testing.T) {
 }
 
 func withdrawToken(t *testing.T, sendUser string, sendPass string, receiveAddress string, ch chan<- string, amount int64) {
-	var userKey keys.KeyOutput
-
 	//get address with username
-	keyEndPoint := fmt.Sprintf("/keys/%s", sendUser)
-	res, body := request(t, inschainPort, "GET", keyEndPoint, nil)
-	require.Equal(t, http.StatusOK, res.StatusCode, body)
-	json.Unmarshal([]byte(body), &userKey)
-	sendAddress := userKey.Address
-	numOfGetTxs++
-
-	acc := testGetAccount(t, sendAddress)
+	acc := userMap[sendUser]
 	sequence := acc.Sequence
 
 	// send
 	jsonStr := []byte(fmt.Sprintf(`{ "name":"%s", "password":"%s", "chain_id":"%s", "sequence":%d, "amount":[{ "denom": "%s", "amount": %d }] }`, sendUser, sendPass, inschainId, sequence, getxCoinDenom, amount))
-	res, body = request(t, inschainPort, "POST", "/accounts/"+receiveAddress+"/send", jsonStr)
+	res, body := request(t, inschainPort, "POST", "/accounts/"+receiveAddress+"/send", jsonStr)
 
-	require.Equal(t, http.StatusOK, res.StatusCode, body)
+	//require.Equal(t, http.StatusOK, res.StatusCode, body)
 	if res.StatusCode != http.StatusOK {
 		//Error happened during posting 500 with details CheckTx failed: (3) msg: Invalid sequence. Got 0, expected 1
-		ch <- fmt.Sprintf(batchSendingError+" with status code %d; details %s\n", res.StatusCode, body)
+		ch <- fmt.Sprintf(batchSendingError+" with status code %d; details %s for key %s\n", res.StatusCode, body, sendUser)
 		return
 	}
 
 	var resultTx ctypes.ResultBroadcastTxCommit
 	if err := json.Unmarshal([]byte(body), &resultTx); err != nil {
-		ch <- fmt.Sprintf(batchSendingError+" %v\n", err)
+		ch <- fmt.Sprintf(batchSendingError+" %v for key %s\n", err, sendUser)
 		return
 	}
 
