@@ -2,6 +2,7 @@ package store
 
 import (
 	"github.com/cosmos/cosmos-sdk/types"
+	cmn "github.com/tendermint/tmlibs/common"
 )
 
 // Import cosmos-sdk/types/store.go for convenience.
@@ -13,6 +14,7 @@ type MultiStore = types.MultiStore
 type CacheMultiStore = types.CacheMultiStore
 type CommitMultiStore = types.CommitMultiStore
 type KVStore = types.KVStore
+type KVPair = cmn.KVPair
 type Iterator = types.Iterator
 type CacheKVStore = types.CacheKVStore
 type CommitKVStore = types.CommitKVStore
