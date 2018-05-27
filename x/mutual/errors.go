@@ -17,6 +17,7 @@ const (
 	CodeClaimAmtExceed		sdk.CodeType = 507
 	CodePolicyLocked		sdk.CodeType = 508
 	CodeNullAddress			sdk.CodeType = 509
+	CodeInvalidPaticipant	sdk.CodeType = 510
 )
 
 func ErrIncorrectStakingToken(codespace sdk.CodespaceType) sdk.Error {
@@ -58,6 +59,11 @@ func ErrPolicyLocked(codespace sdk.CodespaceType) sdk.Error {
 func ErrNullAddress(codespace sdk.CodespaceType) sdk.Error {
 	return newError(codespace, CodeNullAddress, "")
 }
+
+func ErrInvalidPaticipant(codespace sdk.CodespaceType) sdk.Error {
+	return newError(codespace, CodeInvalidPaticipant, "")
+}
+
 // -----------------------------
 // Helpers
 
