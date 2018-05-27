@@ -9,8 +9,9 @@ import (
 
 	//crypto "github.com/tendermint/go-crypto"
 
-	"github.com/cosmos/cosmos-sdk/client/context"
+	//"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"inschain-tendermint/client/context"
 	"github.com/cosmos/cosmos-sdk/wire"
 	
 	"inschain-tendermint/x/mutual"
@@ -110,6 +111,156 @@ func GetBondInfoCmd(storeName string, cdc *wire.Codec) *cobra.Command {
 	return cmd
 }
 
+// get the command to query all participants for a policy
+func GetPolicyParticipantsCmd(storeName string, cdc *wire.Codec) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "participants",
+		Short: "Query all participants for a givien policy",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			addr, err := sdk.GetAddress(viper.GetString(flagPolicy))
+			if err != nil {
+				return err
+			}
+
+			key := mutual.GetPolicyParticipantsKey(addr)
+			ctx := context.NewCoreContextFromViper()
+			resKVs, err := ctx.QuerySubspace(cdc, key, storeName)
+			if err != nil {
+				return err
+			}
+
+			// parse out the participants
+			var participants []mutual.BondInfo
+			for _, kv := range resKVs {
+				var participant mutual.BondInfo
+				err = cdc.UnmarshalJSON(kv.Value, &participant)
+				if err != nil {
+					return err
+				}
+				participants = append(participants, participant)
+			}
+
+			output, err := wire.MarshalJSONIndent(cdc, participants)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(output))
+			return nil
+
+			// TODO output with proofs / machine parseable etc.
+		},
+	}
+	cmd.Flags().String(flagPolicy, "", "Policy address")
+	return cmd
+}
+
+// get the command to query all transaction for a claim
+func GetClaimTxsCmd(storeName string, cdc *wire.Codec) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "claimTxs",
+		Short: "Query all transaction for a claim",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			addr, err := sdk.GetAddress(viper.GetString(flagPolicy))
+			if err != nil {
+				return err
+			}
+
+			claimAddr, err := sdk.GetAddress(viper.GetString(flagClaim))
+			if err != nil {
+				return err
+			}
+
+			key := mutual.GetClaimTxsKey(addr, claimAddr)
+			ctx := context.NewCoreContextFromViper()
+			resKVs, err := ctx.QuerySubspace(cdc, key, storeName)
+			if err != nil {
+				return err
+			}
+
+			// parse out the transaction
+			var transaction []mutual.ClaimTransaction
+			for _, kv := range resKVs {
+				var tx mutual.ClaimTransaction
+				err = cdc.UnmarshalJSON(kv.Value, &tx)
+				if err != nil {
+					return err
+				}
+				transaction = append(transaction, tx)
+			}
+
+			output, err := wire.MarshalJSONIndent(cdc, transaction)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(output))
+			return nil
+
+			// TODO output with proofs / machine parseable etc.
+		},
+	}
+	cmd.Flags().String(flagPolicy, "", "Policy address")
+	cmd.Flags().String(flagClaim, "", "Claim address")
+
+	return cmd
+}
+
+// get the command to query participant transaction for a claim
+func GetParticipantClaimTxCmd(storeName string, cdc *wire.Codec) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "claimTx",
+		Short: "Query transaction for a claim",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.NewCoreContextFromViper()
+
+			participantAddr, err := ctx.GetFromAddress()
+			if err != nil {
+				return err
+			}
+			
+			addr, err := sdk.GetAddress(viper.GetString(flagPolicy))
+			if err != nil {
+				return err
+			}
+
+			claimAddr, err := sdk.GetAddress(viper.GetString(flagClaim))
+			if err != nil {
+				return err
+			}
+
+			key := mutual.GetClaimTxKey(addr, claimAddr, participantAddr)
+			resKVs, err := ctx.QuerySubspace(cdc, key, storeName)
+			if err != nil {
+				return err
+			}
+
+			// parse out the transaction
+			var transaction []mutual.ClaimTransaction
+			for _, kv := range resKVs {
+				var tx mutual.ClaimTransaction
+				err = cdc.UnmarshalJSON(kv.Value, &tx)
+				if err != nil {
+					return err
+				}
+				transaction = append(transaction, tx)
+			}
+
+			output, err := wire.MarshalJSONIndent(cdc, transaction)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(output))
+			return nil
+
+			// TODO output with proofs / machine parseable etc.
+		},
+	}
+	cmd.Flags().String(flagPolicy, "", "Policy address")
+	cmd.Flags().String(flagClaim, "", "Claim address")
+
+	return cmd
+}
 
 //// get the command to query all the candidates bonded to a delegator
 //func GetCmdQueryDelegatorBonds(storeName string, cdc *wire.Codec) *cobra.Command {

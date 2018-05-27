@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"time"
 	//"encoding/hex"
 	"fmt"
 
@@ -22,7 +23,9 @@ const (
 	flagStake  = "stake"
 	flagPolicy = "policy"
 	flagMember = "member"
+	flagClaim = "claimAddr"
 	flagApproval = "approval"
+	flagUnlocked = "unlocked"
 )
 
 // AddCommands adds mutual subcommands
@@ -35,11 +38,15 @@ func AddCommands(cmd *cobra.Command, cdc *wire.Codec) {
 			UnbondTxCmd(cdc),
 			PolicyLockCmd(cdc),
 			PolicyApprovalCmd(cdc),
+			ClaimCollectCmd(cdc),
 		)...)
 	cmd.AddCommand(
 		client.GetCommands(
 			GetPolicyInfoCmd("mutual", cdc),
 			GetBondInfoCmd("mutual", cdc),
+			GetPolicyParticipantsCmd("mutual", cdc),
+			GetClaimTxsCmd("mutual", cdc),
+			GetParticipantClaimTxCmd("mutual", cdc),
 		)...)
 }
 
@@ -72,7 +79,7 @@ func PolicyLockCmd(cdc *wire.Codec) *cobra.Command {
 		Short: "proposal lock : for test only",
 		RunE:  cmdr.policyLockCmd,
 	}
-	cmd.Flags().String(flagApproval, "", "Approval 1=true, 0=false")
+	cmd.Flags().String(flagUnlocked, "", "Unlocked 1=true, 0=false")
 	return cmd
 }
 
@@ -108,6 +115,18 @@ func UnbondTxCmd(cdc *wire.Codec) *cobra.Command {
 		RunE:  cmdr.unbondTxCmd,
 	}
 	cmd.Flags().String(flagPolicy, "", "Policy address")
+	return cmd
+}
+
+func ClaimCollectCmd(cdc *wire.Codec) *cobra.Command {
+	cmdr := commander{cdc}
+	cmd := &cobra.Command{
+		Use:   "collect",
+		Short: "Claim collect ",
+		RunE:  cmdr.claimCollectCmd,
+	}
+	cmd.Flags().String(flagPolicy, "", "Policy address")
+	cmd.Flags().String(flagClaim, "", "Claim address")
 	return cmd
 }
 
@@ -215,6 +234,28 @@ func (co commander) policyApprovalTxCmd(cmd *cobra.Command, args []string) error
 //	}
 
 	msg := mutual.NewMutualPolicyApprovalMsg(from, memberAddr, approvalVar)
+
+	return co.sendMsg(msg)
+}
+
+func (co commander) claimCollectCmd(cmd *cobra.Command, args []string) error {
+	ctx := context.NewCoreContextFromViper()
+
+	from, err := ctx.GetFromAddress()
+	if err != nil {
+		return err
+	}
+
+	valString := viper.GetString(flagClaim)
+	if len(valString) == 0 {
+		return fmt.Errorf("specify claim address")
+	}
+	claimAddr, err := sdk.GetAddress(valString)
+	if err != nil {
+		return err
+	}
+
+	msg := mutual.NewMutualCollectCliamMsg(from, claimAddr, nil, time.Now().UTC().String())
 
 	return co.sendMsg(msg)
 }

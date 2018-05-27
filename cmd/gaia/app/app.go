@@ -10,6 +10,7 @@ import (
 	"github.com/tendermint/tmlibs/log"
 
 	//bam "github.com/cosmos/cosmos-sdk/baseapp"
+	bam "inschain-tendermint/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -18,9 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/stake"
 	// mutual package
 	"inschain-tendermint/x/mutual"
-	// custom listeners
-	"inschain-tendermint/x/listener"
-	bam "inschain-tendermint/baseapp"
 )
 
 const (
@@ -96,9 +94,6 @@ func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
 	if err != nil {
 		cmn.Exit(err.Error())
 	}
-
-	//Register event listener
-	listener.RegisterListeners()
 
 	return app
 }
