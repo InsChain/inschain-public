@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 )
 
-const stakingToken = "GETX" //"ins2Token"
+const stakingToken = "getx" //"ins2Token"
 
 const moduleName = "mutual"
 
