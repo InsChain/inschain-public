@@ -15,7 +15,7 @@ package test
  * 4. (optional) To clean up (note the step only delete local keys, balances on the blockchain will stay forever)
  *      go test inschain-tendermint/x/mutual/test/ -run TestBatchDeleteKeys -v
  *
- * By default, Linux only allows 1024 file desriptors, which is too low for network connections. Increment this value in /etc/security/limits.conf:
+ * By default, Linux only allows 1024 file desriptors as shown by "ulimit -a", which is too low for network connections. Increment this value in /etc/security/limits.conf:
  *     *       soft  nofile  20000
  *     *       hard  nofile  20000
  */
