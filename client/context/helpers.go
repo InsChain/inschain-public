@@ -10,8 +10,7 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	cmn "github.com/tendermint/tmlibs/common"
 
-	//"github.com/cosmos/cosmos-sdk/client"
-	"inschain-tendermint/client"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -42,51 +41,10 @@ func (ctx CoreContext) BroadcastTx(tx []byte) (*ctypes.ResultBroadcastTxCommit, 
 	return res, err
 }
 
-/* replaced by 0.17.2 query functions
 // Query from Tendermint with the provided key and storename
 func (ctx CoreContext) Query(key cmn.HexBytes, storeName string) (res []byte, err error) {
 
 	path := fmt.Sprintf("/%s/key", storeName)
-	node, err := ctx.GetNode()
-	if err != nil {
-		return res, err
-	}
-
-	opts := rpcclient.ABCIQueryOptions{
-		Height:  ctx.Height,
-		Trusted: ctx.TrustNode,
-	}
-	result, err := node.ABCIQueryWithOptions(path, key, opts)
-	if err != nil {
-		return res, err
-	}
-	resp := result.Response
-	if resp.Code != uint32(0) {
-		return res, errors.Errorf("Query failed: (%d) %s", resp.Code, resp.Log)
-	}
-	return resp.Value, nil
-}
-*/
-
-// Query from Tendermint with the provided key and storename
-func (ctx CoreContext) Query(key cmn.HexBytes, storeName string) (res []byte, err error) {
-	return ctx.query(key, storeName, "key")
-}
-
-// Query from Tendermint with the provided storename and subspace
-func (ctx CoreContext) QuerySubspace(cdc *wire.Codec, subspace []byte, storeName string) (res []cmn.KVPair, err error) {
-	resRaw, err := ctx.query(subspace, storeName, "subspace")
-	if err != nil {
-		return res, err
-	}
-	cdc.MustUnmarshalBinary(resRaw, &res)
-	return
-}
-
-// Query from Tendermint with the provided storename and path
-func (ctx CoreContext) query(key cmn.HexBytes, storeName, endPath string) (res []byte, err error) {
-
-	path := fmt.Sprintf("/%s/%s", storeName, endPath)
 	node, err := ctx.GetNode()
 	if err != nil {
 		return res, err

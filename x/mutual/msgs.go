@@ -187,56 +187,6 @@ func (msg MutualPolicyApprovalMsg) GetSigners() []sdk.Address {
 }
 
 // -------------------------
-// MutualCollectCliamMsg
-
-type MutualCollectCliamMsg struct {
-	PolicyAddress	sdk.Address `json:"policy_address"`
-	ClaimAddress 	sdk.Address `json:"address"`
-	BeginAddress	sdk.Address	`json:"beginwith"`
-	Timestamp		string		`json:"timestamp"`
-}
-
-func NewMutualCollectCliamMsg(policyAddr sdk.Address, claimAddr sdk.Address, beginWith sdk.Address, timestamp string) MutualCollectCliamMsg {
-	return MutualCollectCliamMsg{
-		PolicyAddress: policyAddr,
-		ClaimAddress: claimAddr,
-		BeginAddress: beginWith,
-		Timestamp:	timestamp,
-	}
-}
-
-func (msg MutualCollectCliamMsg) Type() string {
-	return moduleName
-}
-
-func (msg MutualCollectCliamMsg) ValidateBasic() sdk.Error {
-	if msg.PolicyAddress == nil {
-		return ErrNullPolicy(DefaultCodespace)
-	}
-	if msg.ClaimAddress == nil {
-		return ErrNullAddress(DefaultCodespace)
-	}
-
-	return nil
-}
-
-func (msg MutualCollectCliamMsg) Get(key interface{}) interface{} {
-	return nil
-}
-
-func (msg MutualCollectCliamMsg) GetSignBytes() []byte {
-	bz, err := json.Marshal(msg)
-	if err != nil {
-		panic(err)
-	}
-	return bz
-}
-
-func (msg MutualCollectCliamMsg) GetSigners() []sdk.Address {
-	return []sdk.Address{msg.PolicyAddress}
-}
-
-// -------------------------
 // MutualBondMsg
 
 type MutualBondMsg struct {

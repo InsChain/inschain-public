@@ -41,12 +41,3 @@ func (bi BondInfo) isEmpty() bool {
 	return false
 }
 */
-
-// claim colletion transaction
-type ClaimTransaction struct {
-	Policy 		sdk.Address
-	ClaimAddr	sdk.Address
-	Participant	sdk.Address
-	Amount		int64
-	Timestamp	string
-}

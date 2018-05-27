@@ -16,8 +16,6 @@ func NewHandler(k Keeper) sdk.Handler {
 			return handleProposalMsg(ctx, k, msg)
 		case MutualPolicyApprovalMsg:
 			return handlePolicyApprovalMsg(ctx, k, msg)
-		case MutualCollectCliamMsg:
-			return handleMutualCollectCliamMsg(ctx, k, msg)
 		case MutualBondMsg:
 			return handleBondMsg(ctx, k, msg)
 		case MutualUnbondMsg:
@@ -68,18 +66,6 @@ func handleMutualPolicyLockMsg(ctx sdk.Context, k Keeper, msg MutualPolicyLockMs
 
 func handlePolicyApprovalMsg(ctx sdk.Context, k Keeper, msg MutualPolicyApprovalMsg) sdk.Result {
 	_, power, err := k.ApproveClaim(ctx, msg.PolicyAddress, msg.Address, msg.Approval)
-	if err != nil {
-		return err.Result()
-	}
-
-	return sdk.Result{
-		Code:	sdk.ABCICodeOK,
-		Data:   []byte(strconv.FormatInt(power, 10)),
-	}
-}
-
-func handleMutualCollectCliamMsg(ctx sdk.Context, k Keeper, msg MutualCollectCliamMsg) sdk.Result {
-	_, power, err := k.CollectClaim(ctx, msg.PolicyAddress, msg.ClaimAddress, msg.BeginAddress, msg.Timestamp)
 	if err != nil {
 		return err.Result()
 	}

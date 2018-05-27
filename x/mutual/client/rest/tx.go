@@ -21,8 +21,8 @@ func RegisterRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb 
 	r.HandleFunc("/mutual/{policy}/{participant}/join", JoinPolicyRequestHandlerFn(cdc, kb, ctx)).Methods("POST")
 	r.HandleFunc("/mutual/{policy}/{participant}/propose", ProposalRequestHandlerFn(cdc, kb, ctx)).Methods("POST")
 	r.HandleFunc("/mutual/{policy}/{participant}/quit", QuitPolicyRequestHandlerFn(cdc, kb, ctx)).Methods("POST")
-	r.HandleFunc("/mutual/{policy}", PolicyStatusHandlerFn("stake", cdc, kb, ctx)).Methods("GET")
-	r.HandleFunc("/mutual/{policy}/{participant}", PolicyBondStatusHandlerFn("stake", cdc, kb, ctx)).Methods("GET")
+	r.HandleFunc("/mutual/{policy}", PolicyStatusHandlerFn("mutual", cdc, kb, ctx)).Methods("GET")
+	r.HandleFunc("/mutual/{policy}/{participant}", PolicyBondStatusHandlerFn("mutual", cdc, kb, ctx)).Methods("GET")
 }
 
 type newPolicyBody struct {
