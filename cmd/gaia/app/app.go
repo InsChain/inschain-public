@@ -62,7 +62,7 @@ func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
 		keyAccount: sdk.NewKVStoreKey("acc"),
 		keyIBC:     sdk.NewKVStoreKey("ibc"),
 		keyStake:   sdk.NewKVStoreKey("stake"),
-		keyMutual:  sdk.NewKVStoreKey("mutual"),
+		//keyMutual:  sdk.NewKVStoreKey("mutual"),
 	}
 
 	// define the accountMapper
@@ -76,7 +76,7 @@ func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
 	app.coinKeeper = bank.NewKeeper(app.accountMapper)
 	app.ibcMapper = ibc.NewMapper(app.cdc, app.keyIBC, app.RegisterCodespace(ibc.DefaultCodespace))
 	app.stakeKeeper = stake.NewKeeper(app.cdc, app.keyStake, app.coinKeeper, app.RegisterCodespace(stake.DefaultCodespace))
-	app.mutualKeeper = mutual.NewKeeper(app.cdc, app.keyMutual, app.coinKeeper, app.RegisterCodespace(mutual.DefaultCodespace))
+	app.mutualKeeper = mutual.NewKeeper(app.cdc, app.keyStake, app.coinKeeper, app.RegisterCodespace(mutual.DefaultCodespace))
 
 	// register message routes
 	app.Router().
@@ -88,7 +88,7 @@ func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
 	// initialize BaseApp
 	app.SetInitChainer(app.initChainer)
 	app.SetEndBlocker(stake.NewEndBlocker(app.stakeKeeper))
-	app.MountStoresIAVL(app.keyMain, app.keyAccount, app.keyIBC, app.keyStake, app.keyMutual)
+	app.MountStoresIAVL(app.keyMain, app.keyAccount, app.keyIBC, app.keyStake)
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper, stake.FeeHandler))
 	err := app.LoadLatestVersion(app.keyMain)
 	if err != nil {

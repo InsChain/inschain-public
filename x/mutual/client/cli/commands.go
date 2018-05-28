@@ -42,11 +42,11 @@ func AddCommands(cmd *cobra.Command, cdc *wire.Codec) {
 		)...)
 	cmd.AddCommand(
 		client.GetCommands(
-			GetPolicyInfoCmd("mutual", cdc),
-			GetBondInfoCmd("mutual", cdc),
-			GetPolicyParticipantsCmd("mutual", cdc),
-			GetClaimTxsCmd("mutual", cdc),
-			GetParticipantClaimTxCmd("mutual", cdc),
+			GetPolicyInfoCmd("stake", cdc),
+			GetBondInfoCmd("stake", cdc),
+			GetPolicyParticipantsCmd("stake", cdc),
+			GetClaimTxsCmd("stake", cdc),
+			GetParticipantClaimTxCmd("stake", cdc),
 		)...)
 }
 

@@ -57,7 +57,7 @@ func NewMutualApp(logger log.Logger, db dbm.DB) *MutualApp {
 		capKeyAccountStore: sdk.NewKVStoreKey("acc"),
 		capKeyIBCStore:     sdk.NewKVStoreKey("ibc"),
 		capKeyStakingStore: sdk.NewKVStoreKey("stake"),
-		capKeyMutualStore:  sdk.NewKVStoreKey("mutual"),
+		//capKeyMutualStore:  sdk.NewKVStoreKey("mutual"),
 	}
 
 	// define the accountMapper
@@ -71,7 +71,7 @@ func NewMutualApp(logger log.Logger, db dbm.DB) *MutualApp {
 	app.coinKeeper = bank.NewKeeper(app.accountMapper)
 	app.ibcMapper = ibc.NewMapper(app.cdc, app.capKeyIBCStore, app.RegisterCodespace(ibc.DefaultCodespace))
 	app.stakeKeeper = stake.NewKeeper(app.cdc, app.capKeyStakingStore, app.coinKeeper, app.RegisterCodespace(stake.DefaultCodespace))
-	app.mutualKeeper = mutual.NewKeeper(app.cdc, app.capKeyMutualStore, app.coinKeeper, app.RegisterCodespace(mutual.DefaultCodespace))
+	app.mutualKeeper = mutual.NewKeeper(app.cdc, app.capKeyStakingStore, app.coinKeeper, app.RegisterCodespace(mutual.DefaultCodespace))
 	app.Router().
 		AddRoute("bank", bank.NewHandler(app.coinKeeper)).
 		AddRoute("ibc", ibc.NewHandler(app.ibcMapper, app.coinKeeper)).
@@ -80,7 +80,7 @@ func NewMutualApp(logger log.Logger, db dbm.DB) *MutualApp {
 
 	// initialize BaseApp
 	app.SetInitChainer(app.initChainer)
-	app.MountStoresIAVL(app.capKeyMainStore, app.capKeyAccountStore, app.capKeyIBCStore, app.capKeyStakingStore, app.capKeyMutualStore)
+	app.MountStoresIAVL(app.capKeyMainStore, app.capKeyAccountStore, app.capKeyIBCStore, app.capKeyStakingStore)
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper, auth.BurnFeeHandler))
 	err := app.LoadLatestVersion(app.capKeyMainStore)
 	if err != nil {

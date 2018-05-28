@@ -81,6 +81,7 @@ func TestBonding(t *testing.T) {
 	// create a new policy
 	amt, err := keeper.NewPolicy(ctx, addrs[0])
 	assert.Equal(t, int64(0), amt)
+	fmt.Printf("Police Info: %v\n", amt)
 
 	// create three participants, each bond 10 tokens
 	amt, err = keeper.Bond(ctx, addrs[0], addrs[1], sdk.Coin{stakingToken, 10})
@@ -92,23 +93,27 @@ func TestBonding(t *testing.T) {
 	amt, err = keeper.Bond(ctx, addrs[0], addrs[3], sdk.Coin{stakingToken, 10})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(10), amt)
+	fmt.Printf("Participants created\n")
 	
 	// participant 1 : make a proposal for 6 tokens
 	amt, err = keeper.Claim(ctx, addrs[0], addrs[1], sdk.Coin{stakingToken, 6})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(6), amt)
+	fmt.Printf("Proposal made\n")
 	
 	// approve the proposal / claim
 	approved, amt, err := keeper.ApproveClaim(ctx, addrs[0], addrs[1], true)
 	assert.Nil(t, err)
 	assert.Equal(t, true, approved)
 	assert.Equal(t, int64(6), amt)
+	fmt.Printf("Proposal approved\n")
 	
 	// participant 1 collect the claim, get total 6 tokens; participant 2, 3 bonded token deduct 3
 	_, amt, err = keeper.CollectClaim(ctx, addrs[0], addrs[1], nil, "2018-05-27")
 	assert.Nil(t, err)
 	assert.Equal(t, int64(6), amt)
-	
+	fmt.Printf("Collect claim\n")
+
 	// unlock the policy to allow quit / withdraw from the policy
 	locked, err := keeper.PolicyLock(ctx, addrs[0], false)
 	assert.Equal(t, false, locked)
@@ -117,6 +122,7 @@ func TestBonding(t *testing.T) {
 	unbondAddr, amt, err := keeper.Unbond(ctx, addrs[0], addrs[3])
 	assert.Equal(t, addrs[3].String(), unbondAddr.String())
 	assert.Equal(t, int64(7), amt)
+	fmt.Printf("Quit the policy\n")
 
 }
 
