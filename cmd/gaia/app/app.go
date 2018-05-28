@@ -41,7 +41,7 @@ type GaiaApp struct {
 	keyAccount *sdk.KVStoreKey
 	keyIBC     *sdk.KVStoreKey
 	keyStake   *sdk.KVStoreKey
-	keyMutual  *sdk.KVStoreKey
+	//keyMutual  *sdk.KVStoreKey
 
 	// Manage getting and setting accounts
 	accountMapper 	sdk.AccountMapper
