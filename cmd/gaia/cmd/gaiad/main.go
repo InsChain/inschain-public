@@ -10,7 +10,10 @@ import (
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 
-	"github.com/cosmos/cosmos-sdk/cmd/gaia/app"
+	// comment out default app
+	// "github.com/cosmos/cosmos-sdk/cmd/gaia/app"
+	// import updated app
+	"inschain-tendermint/cmd/gaia/app"
 	"github.com/cosmos/cosmos-sdk/server"
 )
 

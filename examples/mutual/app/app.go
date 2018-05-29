@@ -4,21 +4,22 @@ import (
 	"encoding/json"
 
 	abci "github.com/tendermint/abci/types"
-	oldwire "github.com/tendermint/go-wire"
+	//oldwire "github.com/tendermint/go-wire"
 	cmn "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
+	//bam "github.com/cosmos/cosmos-sdk/baseapp"
+	bam "inschain-tendermint/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
-	"github.com/cosmos/cosmos-sdk/x/simplestake"
-	"Inschain-tendermint/x/mutual"
+	"github.com/cosmos/cosmos-sdk/x/stake"
+	"inschain-tendermint/x/mutual"
 
-	"Inschain-tendermint/examples/mutual/types"
+	"inschain-tendermint/examples/mutual/types"
 )
 
 const (
@@ -37,126 +38,80 @@ type MutualApp struct {
 	capKeyStakingStore *sdk.KVStoreKey
 	capKeyMutualStore  *sdk.KVStoreKey
 
-	// Manage getting and setting accounts
-	accountMapper sdk.AccountMapper
+	// keepers
+	accountMapper 	sdk.AccountMapper
+	coinKeeper    	bank.Keeper
+	ibcMapper     	ibc.Mapper
+	stakeKeeper   	stake.Keeper
+	mutualKeeper	mutual.Keeper
 }
 
-func NewMutualApp(logger log.Logger, dbs map[string]dbm.DB) *MutualApp {
+func NewMutualApp(logger log.Logger, db dbm.DB) *MutualApp {
+	// Create app-level codec for txs and accounts.
+	var cdc = MakeCodec()
 	// create your application object
 	var app = &MutualApp{
-		BaseApp:            bam.NewBaseApp(appName, logger, dbs["main"]),
-		cdc:                MakeCodec(),
+		BaseApp:            bam.NewBaseApp(appName, cdc, logger, db),
+		cdc:                cdc,
 		capKeyMainStore:    sdk.NewKVStoreKey("main"),
 		capKeyAccountStore: sdk.NewKVStoreKey("acc"),
 		capKeyIBCStore:     sdk.NewKVStoreKey("ibc"),
 		capKeyStakingStore: sdk.NewKVStoreKey("stake"),
-		capKeyMutualStore:  sdk.NewKVStoreKey("mutual"),
+		//capKeyMutualStore:  sdk.NewKVStoreKey("mutual"),
 	}
 
 	// define the accountMapper
-	app.accountMapper = auth.NewAccountMapperSealed(
+	app.accountMapper = auth.NewAccountMapper(
+		cdc,
 		app.capKeyMainStore, // target store
 		&types.AppAccount{}, // prototype
 	)
 
 	// add handlers
-	coinKeeper := bank.NewCoinKeeper(app.accountMapper)
-	ibcMapper := ibc.NewIBCMapper(app.cdc, app.capKeyIBCStore)
-	stakeKeeper := simplestake.NewKeeper(app.capKeyStakingStore, coinKeeper)
-	mutualKeeper := mutual.NewKeeper(app.capKeyMutualStore, coinKeeper)
+	app.coinKeeper = bank.NewKeeper(app.accountMapper)
+	app.ibcMapper = ibc.NewMapper(app.cdc, app.capKeyIBCStore, app.RegisterCodespace(ibc.DefaultCodespace))
+	app.stakeKeeper = stake.NewKeeper(app.cdc, app.capKeyStakingStore, app.coinKeeper, app.RegisterCodespace(stake.DefaultCodespace))
+	app.mutualKeeper = mutual.NewKeeper(app.cdc, app.capKeyStakingStore, app.coinKeeper, app.RegisterCodespace(mutual.DefaultCodespace))
 	app.Router().
-		AddRoute("bank", bank.NewHandler(coinKeeper)).
-		AddRoute("ibc", ibc.NewHandler(ibcMapper, coinKeeper)).
-		AddRoute("simplestake", simplestake.NewHandler(stakeKeeper)).
-		AddRoute("mutual", mutual.NewHandler(mutualKeeper))
+		AddRoute("bank", bank.NewHandler(app.coinKeeper)).
+		AddRoute("ibc", ibc.NewHandler(app.ibcMapper, app.coinKeeper)).
+		AddRoute("stake", stake.NewHandler(app.stakeKeeper)).
+		AddRoute("mutual", mutual.NewHandler(app.mutualKeeper))
 
 	// initialize BaseApp
-	app.SetTxDecoder(app.txDecoder)
 	app.SetInitChainer(app.initChainer)
-	app.MountStoreWithDB(app.capKeyMainStore, sdk.StoreTypeIAVL, dbs["main"])
-	app.MountStoreWithDB(app.capKeyAccountStore, sdk.StoreTypeIAVL, dbs["acc"])
-	app.MountStoreWithDB(app.capKeyIBCStore, sdk.StoreTypeIAVL, dbs["ibc"])
-	app.MountStoreWithDB(app.capKeyStakingStore, sdk.StoreTypeIAVL, dbs["staking"])
-	app.MountStoreWithDB(app.capKeyMutualStore, sdk.StoreTypeIAVL, dbs["mutual"])
-	// NOTE: Broken until #532 lands
-	//app.MountStoresIAVL(app.capKeyMainStore, app.capKeyIBCStore, app.capKeyStakingStore)
-	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper))
+	app.MountStoresIAVL(app.capKeyMainStore, app.capKeyAccountStore, app.capKeyIBCStore, app.capKeyStakingStore)
+	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper, auth.BurnFeeHandler))
 	err := app.LoadLatestVersion(app.capKeyMainStore)
 	if err != nil {
 		cmn.Exit(err.Error())
 	}
-
 	return app
+
 }
 
-// custom tx codec
-// TODO: use new go-wire
+// Custom tx codec
 func MakeCodec() *wire.Codec {
-	const msgTypeSend = 0x1
-	const msgTypeIssue = 0x2
-	const msgTypeQuiz = 0x3
-	const msgTypeSetTrend = 0x4
-	const msgTypeIBCTransferMsg = 0x5
-	const msgTypeIBCReceiveMsg = 0x6
-	const msgTypeBondMsg = 0x7
-	const msgTypeUnbondMsg = 0x8
-	const msgTypeMutualNewPolicyMsg = 0x9
-	const msgTypeMutualProposalMsg = 0xa
-	const msgTypeMutualPolicyApprovalMsg = 0xb
-	const msgTypeMutualBondMsg = 0xc
-	const msgTypeMutualUnbondMsg = 0xd
-	var _ = oldwire.RegisterInterface(
-		struct{ sdk.Msg }{},
-		oldwire.ConcreteType{bank.SendMsg{}, msgTypeSend},
-		oldwire.ConcreteType{bank.IssueMsg{}, msgTypeIssue},
-		oldwire.ConcreteType{ibc.IBCTransferMsg{}, msgTypeIBCTransferMsg},
-		oldwire.ConcreteType{ibc.IBCReceiveMsg{}, msgTypeIBCReceiveMsg},
-		oldwire.ConcreteType{simplestake.BondMsg{}, msgTypeBondMsg},
-		oldwire.ConcreteType{simplestake.UnbondMsg{}, msgTypeUnbondMsg},
-		oldwire.ConcreteType{mutual.MutualNewPolicyMsg{}, msgTypeMutualNewPolicyMsg},
-		oldwire.ConcreteType{mutual.MutualProposalMsg{}, msgTypeMutualProposalMsg},
-		oldwire.ConcreteType{mutual.MutualPolicyApprovalMsg{}, msgTypeMutualPolicyApprovalMsg},
-		oldwire.ConcreteType{mutual.MutualBondMsg{}, msgTypeMutualBondMsg},
-		oldwire.ConcreteType{mutual.MutualUnbondMsg{}, msgTypeMutualUnbondMsg},
-	)
+	var cdc = wire.NewCodec()
+	wire.RegisterCrypto(cdc) // Register crypto.
+	sdk.RegisterWire(cdc)    // Register Msgs
+	bank.RegisterWire(cdc)
+	stake.RegisterWire(cdc)
+	ibc.RegisterWire(cdc)
+	mutual.RegisterWire(cdc)
 
-	const accTypeApp = 0x1
-	var _ = oldwire.RegisterInterface(
-		struct{ sdk.Account }{},
-		oldwire.ConcreteType{&types.AppAccount{}, accTypeApp},
-	)
-	cdc := wire.NewCodec()
-
-	// cdc.RegisterInterface((*sdk.Msg)(nil), nil)
-	// bank.RegisterWire(cdc)   // Register bank.[SendMsg,IssueMsg] types.
-	// crypto.RegisterWire(cdc) // Register crypto.[PubKey,PrivKey,Signature] types.
-	// ibc.RegisterWire(cdc) // Register ibc.[IBCTransferMsg, IBCReceiveMsg] types.
+	// register custom AppAccount
+	cdc.RegisterInterface((*sdk.Account)(nil), nil)
+	cdc.RegisterConcrete(&types.AppAccount{}, "mutual/Account", nil)
 	return cdc
 }
 
-// custom logic for transaction decoding
-func (app *MutualApp) txDecoder(txBytes []byte) (sdk.Tx, sdk.Error) {
-	var tx = sdk.StdTx{}
-
-	if len(txBytes) == 0 {
-		return nil, sdk.ErrTxDecode("txBytes are empty")
-	}
-
-	// StdTx.Msg is an interface. The concrete types
-	// are registered by MakeTxCodec in bank.RegisterWire.
-	err := app.cdc.UnmarshalBinary(txBytes, &tx)
-	if err != nil {
-		return nil, sdk.ErrTxDecode("").TraceCause(err, "")
-	}
-	return tx, nil
-}
-
-// custom logic for mutual initialization
+// Custom logic for mutual initialization
 func (app *MutualApp) initChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	stateJSON := req.AppStateBytes
 
 	genesisState := new(types.GenesisState)
-	err := json.Unmarshal(stateJSON, genesisState)
+	err := app.cdc.UnmarshalJSON(stateJSON, genesisState)
 	if err != nil {
 		panic(err) // TODO https://github.com/cosmos/cosmos-sdk/issues/468
 		// return sdk.ErrGenesisParse("").TraceCause(err, "")
@@ -171,4 +126,26 @@ func (app *MutualApp) initChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 		app.accountMapper.SetAccount(ctx, acc)
 	}
 	return abci.ResponseInitChain{}
+}
+
+// Custom logic for state export
+func (app *MutualApp) ExportAppStateJSON() (appState json.RawMessage, err error) {
+	ctx := app.NewContext(true, abci.Header{})
+
+	// iterate to get the accounts
+	accounts := []*types.GenesisAccount{}
+	appendAccount := func(acc sdk.Account) (stop bool) {
+		account := &types.GenesisAccount{
+			Address: acc.GetAddress(),
+			Coins:   acc.GetCoins(),
+		}
+		accounts = append(accounts, account)
+		return false
+	}
+	app.accountMapper.IterateAccounts(ctx, appendAccount)
+
+	genState := types.GenesisState{
+		Accounts: accounts,
+	}
+	return wire.MarshalJSONIndent(app.cdc, genState)
 }

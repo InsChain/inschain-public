@@ -1,8 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -11,11 +12,13 @@ import (
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 
-	"Inschain-tendermint/examples/mutual/app"
+	"inschain-tendermint/examples/mutual/app"
 	"github.com/cosmos/cosmos-sdk/server"
 )
 
 // rootCmd is the entry point for this binary
+
+/*
 var (
 	context = server.NewDefaultContext()
 	rootCmd = &cobra.Command{
@@ -65,4 +68,34 @@ func main() {
 	rootDir := os.ExpandEnv("$HOME/.mutuald")
 	executor := cli.PrepareBaseCmd(rootCmd, "BC", rootDir)
 	executor.Execute()
+}
+*/
+
+func main() {
+	cdc := app.MakeCodec()
+	ctx := server.NewDefaultContext()
+
+	rootCmd := &cobra.Command{
+		Use:               "mutuald",
+		Short:             "mutual (server)",
+		PersistentPreRunE: server.PersistentPreRunEFn(ctx),
+	}
+
+	server.AddCommands(ctx, cdc, rootCmd, server.DefaultAppInit,
+		server.ConstructAppCreator(newApp, "mutual"),
+		server.ConstructAppExporter(exportAppState, "mutual"))
+
+	// prepare and add flags
+	rootDir := os.ExpandEnv("$HOME/.mutuald")
+	executor := cli.PrepareBaseCmd(rootCmd, "MU", rootDir)
+	executor.Execute()
+}
+
+func newApp(logger log.Logger, db dbm.DB) abci.Application {
+	return app.NewMutualApp(logger, db)
+}
+
+func exportAppState(logger log.Logger, db dbm.DB) (json.RawMessage, error) {
+	bapp := app.NewMutualApp(logger, db)
+	return bapp.ExportAppStateJSON()
 }

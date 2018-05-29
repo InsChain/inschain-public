@@ -9,13 +9,16 @@ import (
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
+	//bam "github.com/cosmos/cosmos-sdk/baseapp"
+	bam "inschain-tendermint/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 	"github.com/cosmos/cosmos-sdk/x/stake"
+	// mutual package
+	"inschain-tendermint/x/mutual"
 )
 
 const (
@@ -38,12 +41,14 @@ type GaiaApp struct {
 	keyAccount *sdk.KVStoreKey
 	keyIBC     *sdk.KVStoreKey
 	keyStake   *sdk.KVStoreKey
+	//keyMutual  *sdk.KVStoreKey
 
 	// Manage getting and setting accounts
-	accountMapper sdk.AccountMapper
-	coinKeeper    bank.Keeper
-	ibcMapper     ibc.Mapper
-	stakeKeeper   stake.Keeper
+	accountMapper 	sdk.AccountMapper
+	coinKeeper    	bank.Keeper
+	ibcMapper     	ibc.Mapper
+	stakeKeeper   	stake.Keeper
+	mutualKeeper	mutual.Keeper
 }
 
 func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
@@ -57,6 +62,7 @@ func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
 		keyAccount: sdk.NewKVStoreKey("acc"),
 		keyIBC:     sdk.NewKVStoreKey("ibc"),
 		keyStake:   sdk.NewKVStoreKey("stake"),
+		//keyMutual:  sdk.NewKVStoreKey("mutual"),
 	}
 
 	// define the accountMapper
@@ -70,12 +76,14 @@ func NewGaiaApp(logger log.Logger, db dbm.DB) *GaiaApp {
 	app.coinKeeper = bank.NewKeeper(app.accountMapper)
 	app.ibcMapper = ibc.NewMapper(app.cdc, app.keyIBC, app.RegisterCodespace(ibc.DefaultCodespace))
 	app.stakeKeeper = stake.NewKeeper(app.cdc, app.keyStake, app.coinKeeper, app.RegisterCodespace(stake.DefaultCodespace))
+	app.mutualKeeper = mutual.NewKeeper(app.cdc, app.keyStake, app.coinKeeper, app.RegisterCodespace(mutual.DefaultCodespace))
 
 	// register message routes
 	app.Router().
 		AddRoute("bank", bank.NewHandler(app.coinKeeper)).
 		AddRoute("ibc", ibc.NewHandler(app.ibcMapper, app.coinKeeper)).
-		AddRoute("stake", stake.NewHandler(app.stakeKeeper))
+		AddRoute("stake", stake.NewHandler(app.stakeKeeper)).
+		AddRoute("mutual", mutual.NewHandler(app.mutualKeeper))
 
 	// initialize BaseApp
 	app.SetInitChainer(app.initChainer)
@@ -98,6 +106,7 @@ func MakeCodec() *wire.Codec {
 	stake.RegisterWire(cdc)
 	auth.RegisterWire(cdc)
 	sdk.RegisterWire(cdc)
+	mutual.RegisterWire(cdc)
 	wire.RegisterCrypto(cdc)
 	return cdc
 }

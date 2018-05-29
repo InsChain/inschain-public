@@ -53,6 +53,10 @@
   version = "~1.2.1"
 
 [[constraint]]
+  name = "github.com/cosmos/cosmos-sdk"
+  revision = "v0.16.0-rc0"
+
+[[constraint]]
   name = "github.com/tendermint/abci"
   version = "~0.10.3"
 

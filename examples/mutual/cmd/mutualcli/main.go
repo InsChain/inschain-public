@@ -9,19 +9,22 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/keys"
-	"github.com/cosmos/cosmos-sdk/client/lcd"
+// comment out default lcd , to import updated lcd bellow
+//	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 
 	"github.com/cosmos/cosmos-sdk/version"
-	authcmd "github.com/cosmos/cosmos-sdk/x/auth/commands"
-	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/commands"
-	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/commands"
-	simplestakingcmd "github.com/cosmos/cosmos-sdk/x/simplestake/commands"
-	mutualcmd "Inschain-tendermint/x/mutual/commands"
+	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
+	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/client/cli"
+	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
 
-	"Inschain-tendermint/examples/mutual/app"
-	"Inschain-tendermint/examples/mutual/types"
+	mutualcmd "inschain-tendermint/x/mutual/client/cli"
+
+	"inschain-tendermint/examples/mutual/app"
+	"inschain-tendermint/examples/mutual/types"
+	"inschain-tendermint/client/lcd"
 )
 
 // rootCmd is the entry point for this binary
@@ -48,30 +51,34 @@ func main() {
 	rootCmd.AddCommand(client.LineBreak)
 	tx.AddCommands(rootCmd, cdc)
 	rootCmd.AddCommand(client.LineBreak)
-
+	// add mutual commands
+	mutualcmd.AddCommands(rootCmd, cdc)
+	rootCmd.AddCommand(client.LineBreak)
+	
 	// add query/post commands (custom to binary)
 	rootCmd.AddCommand(
 		client.GetCommands(
-			authcmd.GetAccountCmd("main", cdc, types.GetAccountDecoder(cdc)),
+			authcmd.GetAccountCmd("acc", cdc, types.GetAccountDecoder(cdc)),
+			//mutualcmd.GetPolicyInfoCmd("mutual", cdc),
+			//mutualcmd.GetBondInfoCmd("mutual", cdc),
 		)...)
+
 	rootCmd.AddCommand(
 		client.PostCommands(
 			bankcmd.SendTxCmd(cdc),
-		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
 			ibccmd.IBCTransferCmd(cdc),
-		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
 			ibccmd.IBCRelayCmd(cdc),
-			simplestakingcmd.BondTxCmd(cdc),
+			stakecmd.GetCmdDeclareCandidacy(cdc),
+			stakecmd.GetCmdEditCandidacy(cdc),
+			stakecmd.GetCmdDelegate(cdc),
+			stakecmd.GetCmdUnbond(cdc),
+			//mutualcmd.NewPolicyCmd(cdc),
+			//mutualcmd.ProposalCmd(cdc),
+			//mutualcmd.PolicyApprovalCmd(cdc),
+			//mutualcmd.BondTxCmd(cdc),
+			//mutualcmd.UnbondTxCmd(cdc),
+			//mutualcmd.PolicyLockCmd(cdc),			
 		)...)
-	rootCmd.AddCommand(
-		client.PostCommands(
-			simplestakingcmd.UnbondTxCmd(cdc),
-		)...)
-// TODO : JH add mutual commands
 
 	// add proxy, version and key info
 	rootCmd.AddCommand(
@@ -83,6 +90,6 @@ func main() {
 	)
 
 	// prepare and add flags
-	executor := cli.PrepareMainCmd(rootCmd, "BC", os.ExpandEnv("$HOME/.mutualcli"))
+	executor := cli.PrepareMainCmd(rootCmd, "MC", os.ExpandEnv("$HOME/.mutualcli"))
 	executor.Execute()
 }

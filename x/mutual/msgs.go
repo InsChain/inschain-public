@@ -25,7 +25,7 @@ func (msg MutualNewPolicyMsg) Type() string {
 
 func (msg MutualNewPolicyMsg) ValidateBasic() sdk.Error {
 	if msg.Address == nil {
-		return ErrNullPolicy()
+		return ErrNullPolicy(DefaultCodespace)
 	}
 
 	return nil
@@ -70,11 +70,11 @@ func (msg MutualProposalMsg) Type() string {
 
 func (msg MutualProposalMsg) ValidateBasic() sdk.Error {
 	if msg.Amount.IsZero() {
-		return ErrEmptyStake()
+		return ErrEmptyStake(DefaultCodespace)
 	}
 
 	if msg.Address == nil {
-		return ErrNullAddress()
+		return ErrNullAddress(DefaultCodespace)
 	}
 
 	return nil
@@ -94,6 +94,48 @@ func (msg MutualProposalMsg) GetSignBytes() []byte {
 
 func (msg MutualProposalMsg) GetSigners() []sdk.Address {
 	return []sdk.Address{msg.Address}
+}
+
+// -------------------------
+// MutualPolicyLockMsg
+
+type MutualPolicyLockMsg struct {
+	PolicyAddress	sdk.Address `json:"policy_address"`
+	Lock	bool   		`json:"lock"`
+}
+
+func NewMutualPolicyLockMsg(addr sdk.Address, approval bool) MutualPolicyLockMsg {
+	return MutualPolicyLockMsg{
+		PolicyAddress: addr,
+		Lock: approval,
+	}
+}
+
+func (msg MutualPolicyLockMsg) Type() string {
+	return moduleName
+}
+
+func (msg MutualPolicyLockMsg) ValidateBasic() sdk.Error {
+	if msg.PolicyAddress == nil {
+		return ErrNullPolicy(DefaultCodespace)
+	}
+	return nil
+}
+
+func (msg MutualPolicyLockMsg) Get(key interface{}) interface{} {
+	return nil
+}
+
+func (msg MutualPolicyLockMsg) GetSignBytes() []byte {
+	bz, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return bz
+}
+
+func (msg MutualPolicyLockMsg) GetSigners() []sdk.Address {
+	return []sdk.Address{msg.PolicyAddress}
 }
 
 // -------------------------
@@ -119,10 +161,10 @@ func (msg MutualPolicyApprovalMsg) Type() string {
 
 func (msg MutualPolicyApprovalMsg) ValidateBasic() sdk.Error {
 	if msg.PolicyAddress == nil {
-		return ErrNullPolicy()
+		return ErrNullPolicy(DefaultCodespace)
 	}
 	if msg.Address == nil {
-		return ErrNullAddress()
+		return ErrNullAddress(DefaultCodespace)
 	}
 
 	return nil
@@ -141,6 +183,56 @@ func (msg MutualPolicyApprovalMsg) GetSignBytes() []byte {
 }
 
 func (msg MutualPolicyApprovalMsg) GetSigners() []sdk.Address {
+	return []sdk.Address{msg.PolicyAddress}
+}
+
+// -------------------------
+// MutualCollectCliamMsg
+
+type MutualCollectCliamMsg struct {
+	PolicyAddress	sdk.Address `json:"policy_address"`
+	ClaimAddress 	sdk.Address `json:"address"`
+	BeginAddress	sdk.Address	`json:"beginwith"`
+	Timestamp		string		`json:"timestamp"`
+}
+
+func NewMutualCollectCliamMsg(policyAddr sdk.Address, claimAddr sdk.Address, beginWith sdk.Address, timestamp string) MutualCollectCliamMsg {
+	return MutualCollectCliamMsg{
+		PolicyAddress: policyAddr,
+		ClaimAddress: claimAddr,
+		BeginAddress: beginWith,
+		Timestamp:	timestamp,
+	}
+}
+
+func (msg MutualCollectCliamMsg) Type() string {
+	return moduleName
+}
+
+func (msg MutualCollectCliamMsg) ValidateBasic() sdk.Error {
+	if msg.PolicyAddress == nil {
+		return ErrNullPolicy(DefaultCodespace)
+	}
+	if msg.ClaimAddress == nil {
+		return ErrNullAddress(DefaultCodespace)
+	}
+
+	return nil
+}
+
+func (msg MutualCollectCliamMsg) Get(key interface{}) interface{} {
+	return nil
+}
+
+func (msg MutualCollectCliamMsg) GetSignBytes() []byte {
+	bz, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return bz
+}
+
+func (msg MutualCollectCliamMsg) GetSigners() []sdk.Address {
 	return []sdk.Address{msg.PolicyAddress}
 }
 
@@ -167,11 +259,11 @@ func (msg MutualBondMsg) Type() string {
 
 func (msg MutualBondMsg) ValidateBasic() sdk.Error {
 	if msg.Stake.IsZero() {
-		return ErrEmptyStake()
+		return ErrEmptyStake(DefaultCodespace)
 	}
 
 	if msg.Address == nil {
-		return ErrNullAddress()
+		return ErrNullAddress(DefaultCodespace)
 	}
 
 	return nil
@@ -201,7 +293,7 @@ type MutualUnbondMsg struct {
 	Address sdk.Address `json:"address"`
 }
 
-func NewMutualMutualUnbondMsg(policyAddr sdk.Address, addr sdk.Address) MutualUnbondMsg {
+func NewMutualUnbondMsg(policyAddr sdk.Address, addr sdk.Address) MutualUnbondMsg {
 	return MutualUnbondMsg{
 		PolicyAddress: policyAddr,
 		Address: addr,

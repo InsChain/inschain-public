@@ -6,7 +6,7 @@ import (
 )
 
 // a simple policy class for test only
-type policyInfo struct {
+type PolicyInfo struct {
 	PolicyAddr		sdk.Address
 	ClaimAddr		sdk.Address
 	ClaimAmount		int64
@@ -17,9 +17,9 @@ type policyInfo struct {
 //	StartDate  		? TODO: research to see how date / time using in Golang and chain
 }
 
-/* //invalid operation: pi == policyInfo literal (struct containing common.HexBytes cannot be compared)
-func (pi policyInfo) isEmpty() bool {
-	if pi == (policyInfo{}) {
+/* //invalid operation: pi == PolicyInfo literal (struct containing common.HexBytes cannot be compared)
+func (pi PolicyInfo) isEmpty() bool {
+	if pi == (PolicyInfo{}) {
 		return true
 	}
 	return false
@@ -27,17 +27,26 @@ func (pi policyInfo) isEmpty() bool {
 */
 
 // a simple policy / member class (wallet) for test only
-type bondInfo struct {
+type BondInfo struct {
 	PolicyAddr 		sdk.Address
 	MemberAddr		sdk.Address
 	Amount			int64
 }
 
-/* //invalid operation: bi == bondInfo literal (struct containing common.HexBytes cannot be compared)
-func (bi bondInfo) isEmpty() bool {
-	if bi == (bondInfo{}) { 
+/* //invalid operation: bi == BondInfo literal (struct containing common.HexBytes cannot be compared)
+func (bi BondInfo) isEmpty() bool {
+	if bi == (BondInfo{}) { 
 		return true
 	}
 	return false
 }
 */
+
+// claim colletion transaction
+type ClaimTransaction struct {
+	Policy 		sdk.Address
+	ClaimAddr	sdk.Address
+	Participant	sdk.Address
+	Amount		int64
+	Timestamp	string
+}
