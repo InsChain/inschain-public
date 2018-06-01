@@ -13,4 +13,5 @@ func RegisterWire(cdc *wire.Codec) {
 	cdc.RegisterConcrete(MutualBondMsg{}, "mutual/BondMsg", nil)
 	cdc.RegisterConcrete(MutualUnbondMsg{}, "mutual/UnbondMsg", nil)
 	cdc.RegisterConcrete(MutualPolicyLockMsg{}, "mutual/PolicyUnlockMsg", nil)
+	cdc.RegisterConcrete(MutualAirdropMsg{}, "mutual/AirdropMsg", nil)
 }

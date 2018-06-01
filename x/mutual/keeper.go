@@ -163,9 +163,9 @@ func (k Keeper) CollectClaim(ctx sdk.Context, policyAddr sdk.Address, claimAddr 
 	if pi.ClaimAddr.String() != claimAddr.String() || pi.ClaimApproved == false {
 		return false, 0, ErrInvalidClaim(k.codespace)
 	}
-	maxRetrieve := 10000
+	maxRetrieve := 50000
 	if beginWith != nil {	// for test only , is not using begin address for now
-		maxRetrieve = 1000
+		maxRetrieve = 20000
 	}
 	toDeliver := int64(math.Round(float64(pi.ClaimAmount / int64(pi.Count - 1))))
 	if toDeliver < 1 {
@@ -346,6 +346,30 @@ func (k Keeper) Unbond(ctx sdk.Context, policyAddr sdk.Address, addr sdk.Address
 	}
 
 	return bi.MemberAddr, bi.Amount, nil
+}
+
+// Airdrop coins to target addresses
+func (k Keeper) Airdrop(ctx sdk.Context, sourceAddr sdk.Address, targets []ADTarget, amount sdk.Coin) (sdk.Address, int64, sdk.Error) {
+
+//	totalAmt := sdk.Coin {
+//		Denom:	amount.Denom,
+//		Amount: amount.Amount * int64(len(targetAddrs)),
+//	}
+	// deduct from source address
+	_, err := k.ck.SubtractCoins(ctx, sourceAddr, []sdk.Coin{amount})
+	if err != nil {
+		return sourceAddr, 0, err
+	}
+
+	// add coins to each target address
+	for _, target := range targets {
+		_, err := k.ck.AddCoins(ctx, target.Address, []sdk.Coin{target.Amount})
+		if err != nil {
+			return sourceAddr, 0, err
+		}
+	}
+
+	return sourceAddr, amount.Amount, nil
 }
 
 // FOR TESTING PURPOSES -------------------------------------------------
