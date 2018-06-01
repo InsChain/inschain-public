@@ -413,7 +413,7 @@ func (co commander) airdropCmd(cmd *cobra.Command, args []string) error {
 
 	msg := mutual.NewMutualAirdropMsg(from, targets, totalCoin)
 
-	fmt.Println(msg)
+	//fmt.Println(msg)
 
 	return co.sendMsg(msg)
 }
