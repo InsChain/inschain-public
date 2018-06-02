@@ -11,9 +11,9 @@ package test
  * 2. Start the REST service
  *		gaiacli rest-server -a tcp://localhost:1317 -c inschain -n tcp://localhost:46657 &
  * 3. Start the test program (default timeout is 10 minutes, increase to 5 hours)
- *		go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v
+ *		go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v -count=1
  * 4. (optional) To clean up (note the step only delete local keys, balances on the blockchain will stay forever)
- *      go test inschain-tendermint/x/mutual/test/ -run TestBatchDeleteKeys -v
+ *      go test inschain-tendermint/x/mutual/test/ -run TestBatchDeleteKeys -v -count=1
  *
  * By default, Linux only allows 1024 file desriptors, which is too low for network connections. Increment this value in /etc/security/limits.conf:
  *     *       soft  nofile  20000
@@ -22,9 +22,11 @@ package test
 
 import (
     "bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -45,7 +47,9 @@ import (
 
 /*
  * To run the test, use the following command
- * go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v
+ * go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v -count=1
+ * or concurrent transfer only for subsequent runs after creating testing accounts and transferring some coins to those accounts
+ * go test inschain-tendermint/x/mutual/test/ -run TestBatchWithdrawCoins -timeout 300m -v -count=1
  *
  */
 
@@ -73,6 +77,7 @@ var (
 	numOfGetTxs, numOfSendTxs, numOfCreateTxs, numOfDeleteTxs int64
 	
 	userMap = make(map[string]InschainBaseAccount) //Map for keeping user name/account mapping
+	userExportFile = "account_export.csv" //CSV format file for testing the airdrop functionality
 )
 
 type GetAccountResult struct {
@@ -187,12 +192,23 @@ func TestGetKeys(t *testing.T) {
 	numOfGetTxs++
 }
 
-//Test load account name/address mapping into a map
+//Test load account name/address mapping into a map and also save to a CSV file 
 func TestLoadUserAccountMapping(t *testing.T) {
 	start := time.Now()
 	fmt.Println("Start time is :", start)
 	
 	fmt.Println("Load account info :")
+
+	file, err := os.Create(userExportFile)
+	if err != nil {
+		log.Fatal("Cannot create file", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+	writer.Write([]string{strconv.Itoa(numOfAccounts), strconv.Itoa(2*numOfAccounts)+getxCoinDenom})
+
 	for i := 0; i < numOfAccounts; i++ {
 		userName := testUserNamePrefix + strconv.Itoa(i)
 
@@ -206,6 +222,9 @@ func TestLoadUserAccountMapping(t *testing.T) {
 		
 		userAccount := testGetAccount(t, userAddress)
 		userMap[userName] = userAccount
+
+		//Write to file as well
+		writer.Write([]string{userAddress, "2"+getxCoinDenom})
 	}
 	timespan := time.Since(start).Seconds()
 	fmt.Printf("Used time for loading %d accounts is %.2fs\n", numOfAccounts, timespan)
