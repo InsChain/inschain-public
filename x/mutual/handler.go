@@ -24,6 +24,8 @@ func NewHandler(k Keeper) sdk.Handler {
 			return handleMutualUnbondMsg(ctx, k, msg)
 		case MutualPolicyLockMsg:
 			return handleMutualPolicyLockMsg(ctx, k, msg)
+		case MutualAirdropMsg:
+			return handleMutualAirdropMsg(ctx, k, msg)
 		default:
 			return sdk.ErrUnknownRequest("No match for message type.").Result()
 		}
@@ -118,5 +120,16 @@ func handleMutualUnbondMsg(ctx sdk.Context, k Keeper, msg MutualUnbondMsg) sdk.R
 		Code:       sdk.ABCICodeOK,
 		Data:		[]byte(addr),
 //		ValidatorUpdates: abci.Validators{valSet},
+	}
+}
+
+func handleMutualAirdropMsg(ctx sdk.Context, k Keeper, msg MutualAirdropMsg) sdk.Result {
+	_, total, err := k.Airdrop(ctx, msg.SourceAddr, msg.Targets, msg.Amount)
+	if err != nil {
+		return err.Result()
+	}
+	return sdk.Result{
+		Code:       sdk.ABCICodeOK,
+		Data:		[]byte(strconv.FormatInt(total, 10)),
 	}
 }

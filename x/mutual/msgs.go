@@ -323,3 +323,43 @@ func (msg MutualUnbondMsg) GetSignBytes() []byte {
 func (msg MutualUnbondMsg) GetSigners() []sdk.Address {
 	return []sdk.Address{msg.Address}
 }
+
+// for test only : airdrop coin to test accounts
+type ADTarget struct {
+	Address		sdk.Address `json:"ad_targetaddress"`
+	Amount		sdk.Coin	`json:"ad_amount"`
+}
+
+type MutualAirdropMsg struct {
+	SourceAddr 	sdk.Address `json:"source_address"`
+	Amount		sdk.Coin	`json:"amount"`
+	Targets 	[]ADTarget 	`json:"targets"`
+}
+
+func NewMutualAirdropMsg(sourceAddr sdk.Address, targets []ADTarget, amount sdk.Coin) MutualAirdropMsg {
+	return MutualAirdropMsg{
+		SourceAddr: sourceAddr,
+		Amount:	amount,
+		Targets: targets,
+	}
+}
+
+func (msg MutualAirdropMsg) Type() string {
+	return moduleName
+}
+
+func (msg MutualAirdropMsg) ValidateBasic() sdk.Error {
+	return nil
+}
+
+func (msg MutualAirdropMsg) GetSignBytes() []byte {
+	bz, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return bz
+}
+
+func (msg MutualAirdropMsg) GetSigners() []sdk.Address {
+	return []sdk.Address{msg.SourceAddr}
+}

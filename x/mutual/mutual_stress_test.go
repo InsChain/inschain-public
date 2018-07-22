@@ -1,4 +1,4 @@
-package test
+package mutual
 
 /**
  * This test case makes REST calls for batch account creation, query, transaction, and account deletion. It can be used for unit testing and benchmarking system performance.
@@ -11,9 +11,9 @@ package test
  * 2. Start the REST service
  *		gaiacli rest-server -a tcp://localhost:1317 -c inschain -n tcp://localhost:46657 &
  * 3. Start the test program (default timeout is 10 minutes, increase to 5 hours)
- *		go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v -count=1
+ *		go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v
  * 4. (optional) To clean up (note the step only delete local keys, balances on the blockchain will stay forever)
- *      go test inschain-tendermint/x/mutual/test/ -run TestBatchDeleteKeys -v -count=1
+ *      go test inschain-tendermint/x/mutual/test/ -run TestBatchDeleteKeys -v
  *
  * By default, Linux only allows 1024 file desriptors, which is too low for network connections. Increment this value in /etc/security/limits.conf:
  *     *       soft  nofile  20000
@@ -22,11 +22,9 @@ package test
 
 import (
     "bytes"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -47,9 +45,7 @@ import (
 
 /*
  * To run the test, use the following command
- * go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v -count=1
- * or concurrent transfer only for subsequent runs after creating testing accounts and transferring some coins to those accounts
- * go test inschain-tendermint/x/mutual/test/ -run TestBatchWithdrawCoins -timeout 300m -v -count=1
+ * go test inschain-tendermint/x/mutual/test/ -run TestBatchOperations -timeout 300m -v
  *
  */
 
@@ -58,11 +54,11 @@ var (
 	getxCoinDenom  = "getx"
 	getxCoinAmount = int64(10000000)
 
-	systemUserName     = "stressTestUser"
-	systemUserPassword = "0123456789"
+	systemUserName     = "getx"
+	systemUserPassword = "1234567890"
 	systemUserAddr     string
 
-	inschainId   = "inschain"
+	inschainId   = "insmu"
 	inschainPort = "1317" //Note: Change to the LCD port you start with "gaiacli rest-server -a tcp://localhost:<port> -c inschain -n tcp://localhost:46657 &"
 
 	//Information for accounts to be created and tested
@@ -70,14 +66,17 @@ var (
 	testUserNamePrefix = "TestStressUser" //Test user names are in the format of testuser<seq_num>
 	testPassword       = "Userpass123"    //Test user password
 
-	amountToSend      = int64(50)                //Amount to be deposited to generated accounts initially
+	amountToSend      = int64(200)                //Amount to be deposited to generated accounts initially
 	amountToWithdraw  = int64(1)                //Amount to be withdrawed to transfer to a given account, must be no greater than amountToSend
+	
+	policyAddr = "D61C9894CE352124254313B7358E0F91E8EB7B28"		// mutual test policy address
+	amountToBond	  = int64(10) // mutual amount to be bond to policy
+	
 	batchSendingError = "Error in batch sending" //Error message for problems during batch transferring
 
 	numOfGetTxs, numOfSendTxs, numOfCreateTxs, numOfDeleteTxs int64
 	
 	userMap = make(map[string]InschainBaseAccount) //Map for keeping user name/account mapping
-	userExportFile = "account_export.csv" //CSV format file for testing the airdrop functionality
 )
 
 type GetAccountResult struct {
@@ -192,23 +191,12 @@ func TestGetKeys(t *testing.T) {
 	numOfGetTxs++
 }
 
-//Test load account name/address mapping into a map and also save to a CSV file 
+//Test load account name/address mapping into a map
 func TestLoadUserAccountMapping(t *testing.T) {
 	start := time.Now()
 	fmt.Println("Start time is :", start)
 	
 	fmt.Println("Load account info :")
-
-	file, err := os.Create(userExportFile)
-	if err != nil {
-		log.Fatal("Cannot create file", err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-	writer.Write([]string{strconv.Itoa(numOfAccounts), strconv.Itoa(2*numOfAccounts)+getxCoinDenom})
-
 	for i := 0; i < numOfAccounts; i++ {
 		userName := testUserNamePrefix + strconv.Itoa(i)
 
@@ -222,9 +210,6 @@ func TestLoadUserAccountMapping(t *testing.T) {
 		
 		userAccount := testGetAccount(t, userAddress)
 		userMap[userName] = userAccount
-
-		//Write to file as well
-		writer.Write([]string{userAddress, "2"+getxCoinDenom})
 	}
 	timespan := time.Since(start).Seconds()
 	fmt.Printf("Used time for loading %d accounts is %.2fs\n", numOfAccounts, timespan)
@@ -293,7 +278,7 @@ func TestBatchOperations(t *testing.T) {
 	TestGetAccounts(t)
 
 	//Withdraw coins from all accounts then deposit to a single account
-	TestBatchWithdrawCoins(t)
+	//TestBatchWithdrawCoins(t)
 
 	//List account balances again - need to wait for a few blocks to have the changes committed to the chain
 	//TestGetAccounts(t)
@@ -395,6 +380,81 @@ func withdrawToken(t *testing.T, sendUser string, sendPass string, receiveAddres
 	fmt.Printf(">>%s send the request at %v\n", sendUser, time.Now())	
 	jsonStr := []byte(fmt.Sprintf(`{ "name":"%s", "password":"%s", "chain_id":"%s", "sequence":%d, "amount":[{ "denom": "%s", "amount": %d }] }`, sendUser, sendPass, inschainId, sequence, getxCoinDenom, amount))
 	res, body := request(t, inschainPort, "POST", "/accounts/"+receiveAddress+"/send", jsonStr)
+	fmt.Printf(">>%s send the request at %v\n", sendUser, time.Now())	
+
+	//require.Equal(t, http.StatusOK, res.StatusCode, body)
+	if res.StatusCode != http.StatusOK {
+		//Error happened during posting 500 with details CheckTx failed: (3) msg: Invalid sequence. Got 0, expected 1
+		ch <- fmt.Sprintf(batchSendingError+" with status code %d; details %s for key %s\n", res.StatusCode, body, sendUser)
+		return
+	}
+	fmt.Printf(">>%s get the response at %v\n", sendUser, time.Now())	
+
+	var resultTx ctypes.ResultBroadcastTxCommit
+	if err := json.Unmarshal([]byte(body), &resultTx); err != nil {
+		ch <- fmt.Sprintf(batchSendingError+" %v for key %s\n", err, sendUser)
+		return
+	}
+	fmt.Printf("<<%s broadcast the result at %v\n", sendUser, time.Now())	
+
+	//No need to wait for confirmation, which requres being idle for a block creation interval
+	//tests.WaitForHeight(resultTx.Height+1, inschainPort)
+	ch <- fmt.Sprintln(sendUser, " is done")
+	numOfSendTxs++
+	return
+}
+
+//Test batch join a policy with some coins in parallel
+func TestBatchJoinPolicy(t *testing.T) {
+	fmt.Println(">>TestBatchJoinPolicy")
+	var ch = make(chan string, numOfAccounts)
+
+	TestLoadUserAccountMapping(t)
+
+	//set start time
+	start := time.Now()
+	//Receiver - use test user with sequence number 0
+	//receiveUser := testUserNamePrefix + "0"
+	//receiveAddress := userMap[receiveUser].Address.String()
+	fmt.Printf("+++++%v Policy address is %s\n", time.Now(), policyAddr)	
+
+	//Transfer from all accounts other than the receiver
+	fmt.Printf("Start time is %v\n", time.Now())	
+
+	for i := 0; i < numOfAccounts; i++ {
+		sendUser := testUserNamePrefix + strconv.Itoa(i)
+		go joinPolicy(t, sendUser, testPassword, policyAddr, ch, amountToBond)
+		if i % 150 == 0 {
+			time.Sleep(15*time.Second)
+		} else {
+			time.Sleep(8*time.Millisecond)
+		}
+	}
+
+	for i := 0; i < numOfAccounts; i++ {
+		message := <-ch
+		fmt.Printf("+++++%v counter %d: %s\n",  time.Now(), i, message)
+		assert.False(t, strings.Contains(message, batchSendingError))
+	}
+
+	//compute time used
+	timespan := time.Since(start).Seconds()
+	fmt.Printf("Used time for transferring: %.2fs for %d retrieval and %d send operations", timespan, numOfAccounts, numOfAccounts)
+	fmt.Println("<<TestBatchJoinPolicy")
+}
+
+func joinPolicy(t *testing.T, sendUser string, sendPass string, receiveAddress string, ch chan<- string, amount int64) {
+	//get address with username
+	acc := userMap[sendUser]
+	sequence := acc.Sequence
+
+/*
+curl -H "Content-Type:application/json" -X POST -d "{\"name\":\"ins11\", \"password\":\"t1234567\", \"chain_id\":\"mutest\", \"sequence\":11, \"amount\":{\"denom\":\"GETX\", \"amount\":10}}" http:/localhost:1317/mutual/57165E2D6B5823F4CBDEE184BDC6951AC9940DB6/0C4B4F9765333CEFF6BAFB3015CA61B08AA2A202/join
+*/	
+	// send
+	fmt.Printf(">>%s send the request at %v\n", sendUser, time.Now())	
+	jsonStr := []byte(fmt.Sprintf(`{ "name":"%s", "password":"%s", "chain_id":"%s", "sequence":%d, "amount":{ "denom": "%s", "amount": %d } }`, sendUser, sendPass, inschainId, sequence, getxCoinDenom, amount))
+	res, body := request(t, inschainPort, "POST", "/mutual/"+receiveAddress+"/"+acc.Address.String()+"/join", jsonStr)
 	fmt.Printf(">>%s send the request at %v\n", sendUser, time.Now())	
 
 	//require.Equal(t, http.StatusOK, res.StatusCode, body)

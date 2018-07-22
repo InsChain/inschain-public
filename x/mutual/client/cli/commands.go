@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"strconv"
+	"strings"
+	"io/ioutil"
 	"time"
 	//"encoding/hex"
 	"fmt"
@@ -15,7 +18,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-
+	//keyc "github.com/tendermint/go-crypto/keys"
+	//keys "github.com/cosmos/cosmos-sdk/client/keys"
+	
 	"inschain-tendermint/x/mutual"
 )
 
@@ -26,6 +31,7 @@ const (
 	flagClaim = "claimAddr"
 	flagApproval = "approval"
 	flagUnlocked = "unlocked"
+	flagFileName = "file"
 )
 
 // AddCommands adds mutual subcommands
@@ -39,6 +45,7 @@ func AddCommands(cmd *cobra.Command, cdc *wire.Codec) {
 			PolicyLockCmd(cdc),
 			PolicyApprovalCmd(cdc),
 			ClaimCollectCmd(cdc),
+			AirdropCmd(cdc),
 		)...)
 	cmd.AddCommand(
 		client.GetCommands(
@@ -129,6 +136,18 @@ func ClaimCollectCmd(cdc *wire.Codec) *cobra.Command {
 	cmd.Flags().String(flagClaim, "", "Claim address")
 	return cmd
 }
+
+func AirdropCmd(cdc *wire.Codec) *cobra.Command {
+	cmdr := commander{cdc}
+	cmd := &cobra.Command{
+		Use:   "airdrop",
+		Short: "Airdrop to accounts , for test only",
+		RunE:  cmdr.airdropCmd,
+	}
+	cmd.Flags().String(flagFileName, "", "File with path")
+	return cmd
+}
+
 
 type commander struct {
 	cdc *wire.Codec
@@ -318,6 +337,83 @@ func (co commander) unbondTxCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	msg := mutual.NewMutualUnbondMsg(policyAddr, from)
+
+	return co.sendMsg(msg)
+}
+
+func (co commander) airdropCmd(cmd *cobra.Command, args []string) error {
+	from, err := context.NewCoreContextFromViper().GetFromAddress()
+	if err != nil {
+		return err
+	}
+/*
+	prefixString := viper.GetString(flagNamePrefix)
+	if len(prefixString) == 0 {
+		return fmt.Errorf("specify name prefix")
+	}
+	startNo := viper.GetInt(flagStartNum)
+	if startNo < 0 {
+		return fmt.Errorf("invalid start number")
+	}
+*/	
+	filePath := viper.GetString(flagFileName)
+	dat, err := ioutil.ReadFile(filePath)
+    if err != nil {
+        return err
+    }
+	//fmt.Print(string(dat))
+    temp := strings.Split(string(dat),"\n")
+	if len(temp) < 2 {
+		return fmt.Errorf("invalid file format, at least two lines")
+	}
+	count 		:= 0
+	totalCoin 	:= sdk.Coin{}
+	targets 	:= make([]mutual.ADTarget, len(temp)-1)
+	i := 0
+	for _, target := range temp {
+		if len(strings.TrimSpace(target)) < 1 {
+			continue
+		}
+		cols := strings.Split(strings.TrimSpace(target),",")
+		if i == 0 {
+			if len(cols) < 2 || strings.TrimSpace(cols[0]) == "" || strings.TrimSpace(cols[1]) == "" {
+				return fmt.Errorf("invalid format in first row, format: <count> <total amount>, example: 10 100mycoin")
+			}
+			count, err = strconv.Atoi(strings.TrimSpace(cols[0]))
+			if err != nil {
+				return fmt.Errorf("invalid format in first row, format: <count> <total amount>, example: 10 100mycoin")
+			}
+			totalCoin, err = sdk.ParseCoin(cols[1])
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(cols) < 2 || strings.TrimSpace(cols[0]) == "" || strings.TrimSpace(cols[1]) == "" {
+				return fmt.Errorf("invalid format in content, format: <address> <amount>, example: BEABCDEDD 10mycoin")
+			}
+			addr, err := sdk.GetAddress(cols[0])
+			if err != nil {
+				return fmt.Errorf("row %d : invalid address", i)
+			}
+			coin, err := sdk.ParseCoin(cols[1])
+			if err != nil {
+				return err
+			}
+			if coin.Denom != totalCoin.Denom {
+				return fmt.Errorf("row %d : denom not match", i)
+			}
+			targets[i -1] = mutual.ADTarget{addr, coin}
+		}
+		i += 1
+	}
+	targets = targets[:i-1]
+
+	fmt.Println(count)
+	fmt.Println(totalCoin)
+
+	msg := mutual.NewMutualAirdropMsg(from, targets, totalCoin)
+
+	//fmt.Println(msg)
 
 	return co.sendMsg(msg)
 }
