@@ -24,3 +24,4 @@ profile.out
 *.box
 *.log
 vagrant
+docs/
